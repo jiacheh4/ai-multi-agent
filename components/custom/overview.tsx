@@ -20,22 +20,21 @@ export const Overview = () => {
           <MessageIcon />
         </p>
         <p>
-          This is an open source Chatbot template built with Next.js and the AI
-          SDK by Vercel. It uses the{" "}
-          <code className="rounded-md bg-muted px-1 py-0.5">streamText</code>{" "}
-          function in the server and the{" "}
-          <code className="rounded-md bg-muted px-1 py-0.5">useChat</code> hook
-          on the client to create a seamless chat experience.
+          This is a AI Chatbot built with {" "}
+          <code className="rounded-md bg-muted px-1 py-0.5">Next.js</code>{" "}
+          and {" "}
+          <code className="rounded-md bg-muted px-1 py-0.5">Vercel</code> 
+
         </p>
         <p>
           {" "}
-          You can learn more about the AI SDK by visiting the{" "}
+          You can learn more about the AI-4-AI by visiting the{" "}
           <Link
             className="text-blue-500 dark:text-blue-400"
-            href="https://sdk.vercel.ai/docs"
+            href="https://ai4ai.vercel.app/"
             target="_blank"
           >
-            Docs
+            AI4AI
           </Link>
           .
         </p>
