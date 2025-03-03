@@ -55,7 +55,7 @@ export function Chat({
         ))
       )}
 
-        {messages.map((message) => (
+        {/* {messages.map((message) => (
           <PreviewMessage
             key={message.id}
             role={message.role}
@@ -63,7 +63,7 @@ export function Chat({
             attachments={message.experimental_attachments}
             toolInvocations={message.toolInvocations}
           />
-        ))}
+        ))} */}
 
         {/* Placeholder to keep scroll position at the bottom */}
         <div ref={messagesEndRef} className="shrink-0 min-w-[24px] min-h-[24px]" />
