@@ -19,6 +19,7 @@ import useWindowSize from "./use-window-size";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 
+// 推荐
 const suggestedActions = [
   {
     title: "What is the weather",
@@ -91,6 +92,11 @@ export function MultimodalInput({
     });
 
     setAttachments([]);
+
+    // Reset the textarea height to its original size
+  if (textareaRef.current) {
+    textareaRef.current.style.height = "auto";
+  }
 
     if (width && width > 768) {
       textareaRef.current?.focus();
@@ -219,8 +225,8 @@ export function MultimodalInput({
         placeholder="Send a message..."
         value={input}
         onChange={handleInput}
-        className="min-h-[24px] overflow-hidden resize-none rounded-lg text-base bg-muted"
-        rows={3}
+        className="min-h-[24px] max-h-[300px] overflow-y-auto resize-y rounded-lg text-base bg-muted"
+        rows={1}
         onKeyDown={(event) => {
           if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
