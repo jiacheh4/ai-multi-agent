@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { cleanupTempSession } from "@/app/(auth)/actions";
 import { auth, signOut } from "@/app/(auth)/auth";
 
 import { History } from "./history";
@@ -44,6 +45,9 @@ export const Navbar = async () => {
                   className="w-full"
                   action={async () => {
                     "use server";
+
+                    // Cleanup temporary session
+                    await cleanupTempSession();
 
                     await signOut({
                       redirectTo: "/",

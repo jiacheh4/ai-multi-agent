@@ -2,9 +2,8 @@
 
 import { z } from "zod";
 
-import { createUser, getUser } from "@/db/queries";
-
-import { signIn } from "./auth";
+import { signIn, signOut, auth } from "@/app/(auth)/auth";
+import { createUser, getUser, deleteChatsByUserId } from "@/db/queries";
 
 const authFormSchema = z.object({
   email: z.string().email(),
@@ -14,6 +13,68 @@ const authFormSchema = z.object({
 export interface LoginActionState {
   status: "idle" | "in_progress" | "success" | "failed" | "invalid_data";
 }
+
+// -----------------------------SKIP LOGIN-----------------------------
+export interface SkipActionState {
+  status: "idle" | "in_progress" | "success" | "failed";
+}
+
+const generateTempCredentials = () => {
+  return {
+    email: `temp@example.com`,
+    password: `temp`,
+  };
+};
+
+export const skipLogin = async (
+  _: SkipActionState
+): Promise<SkipActionState> => {
+  try {
+    const tempCredentials = generateTempCredentials();
+    
+    // Create a temporary user
+    await createUser(
+      tempCredentials.email, 
+      tempCredentials.password, 
+      //true // isTemporary flag (you'll need to add this to your user schema)
+    );
+    
+    // Sign in with temporary credentials
+    await signIn("credentials", {
+      email: tempCredentials.email,
+      password: tempCredentials.password,
+      redirect: false,
+    });
+
+    return { status: "success" };
+  } catch (error) {
+    console.error("Skip login error:", error);
+    return { status: "failed" };
+  }
+};
+
+export const cleanupTempSession = async (): Promise<void> => {
+  try {
+    // Get the current user from the session
+    const session = await auth();
+    
+    if (session?.user?.email?.startsWith('temp')) {
+      // Delete the temporary user's chat
+      if (session.user.id) {
+        await deleteChatsByUserId({ id: session.user.id });
+      } else {
+        throw new Error("User ID is undefined");
+      }
+      
+      // Sign out
+      await signOut({ redirect: false });
+    }
+  } catch (error) {
+    console.error("Cleanup session error:", error);
+  }
+};
+// -----------------------------END OF SKIP LOGIN-----------------------------
+
 
 export const login = async (
   _: LoginActionState,

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { AuthForm } from "@/components/custom/auth-form";
 import { SubmitButton } from "@/components/custom/submit-button";
 
-import { login, LoginActionState } from "../actions";
+import { login, LoginActionState, skipLogin, SkipActionState} from "../actions";
 
 export default function Page() {
   const router = useRouter();
@@ -21,6 +21,26 @@ export default function Page() {
       status: "idle",
     },
   );
+
+  const [skipState, skipAction] = useActionState<SkipActionState, null>(
+    skipLogin,
+    {
+      status: "idle",
+    },
+  );
+
+  useEffect(() => {
+    if (skipState.status === "failed") {
+      toast.error("Failed to create temporary session!");
+    } else if (skipState.status === "success") {
+      toast.success("Temporary session created. Your data will not be saved.");
+      router.refresh();
+    }
+  }, [skipState.status, router]);
+
+  const handleSkip = () => {
+    skipAction(null);
+  };
 
   useEffect(() => {
     if (state.status === "failed") {
@@ -57,6 +77,16 @@ export default function Page() {
               Sign up
             </Link>
             {" for free."}
+          </p>
+          <p className="text-center text-sm text-gray-600 mt-4 dark:text-zinc-400">
+            {"Try a demo? "}
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="font-semibold text-gray-800 hover:underline dark:text-zinc-200"
+            >
+              Skip
+            </button>
           </p>
         </AuthForm>
       </div>

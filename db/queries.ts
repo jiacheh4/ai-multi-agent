@@ -76,6 +76,15 @@ export async function deleteChatById({ id }: { id: string }) {
   }
 }
 
+export async function deleteChatsByUserId({ id }: { id: string }) {
+  try {
+    return await db.delete(chat).where(eq(chat.userId, id));
+  } catch (error) {
+    console.error("Failed to delete chats by user id from database");
+    throw error;
+  }
+}
+
 export async function getChatsByUserId({ id }: { id: string }) {
   try {
     return await db
