@@ -136,3 +136,14 @@ export function getTitleFromChat(chat: Chat) {
 
   return firstMessage.content;
 }
+
+export function changeTitleFromChat(chat: Chat, newTitle: string) {
+  const messages = convertToUIMessages(chat.messages as Array<any>);
+  
+  if (messages.length > 0) {
+    // Modify the first message's content to the new title
+    messages[0].content = newTitle;
+  }
+  
+  return messages;
+}

@@ -3,14 +3,14 @@
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import cx from "classnames";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams, usePathname} from "next/navigation";
 import { User } from "next-auth";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 
 import { Chat } from "@/db/schema";
-import { fetcher, getTitleFromChat } from "@/lib/utils";
+import { fetcher, getTitleFromChat, changeTitleFromChat } from "@/lib/utils";
 
 import {
   InfoIcon,
@@ -63,6 +63,9 @@ export const History = ({ user }: { user: User | undefined }) => {
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [newTitle, setNewTitle] = useState<string>("");
 
   const handleDelete = async () => {
     const deletePromise = fetch(`/api/chat?id=${deleteId}`, {
@@ -83,6 +86,56 @@ export const History = ({ user }: { user: User | undefined }) => {
     });
 
     setShowDeleteDialog(false);
+  };
+
+  const handleRename = async () => {
+    if (!newTitle.trim()) {
+      setShowRenameDialog(false);
+      return;
+    }
+
+    // Find the chat to rename
+    const chatToRename = history?.find(chat => chat.id === renameId);
+    if (!chatToRename) {
+      toast.error("Chat not found");
+      setShowRenameDialog(false);
+      return;
+    }
+
+    // Use changeTitleFromChat to modify the chat's messages
+    const updatedMessages = changeTitleFromChat(chatToRename, newTitle);
+
+    console.log(`Renaming chat ${renameId} to "${newTitle}"`);
+
+    const renamePromise = fetch(`/api/chat?action=rename`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ 
+        id: renameId,
+        title: newTitle,
+        messages: updatedMessages
+      }),
+    });
+
+    toast.promise(renamePromise, {
+      loading: "Renaming chat...",
+      success: async (response) => {
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+        await mutate();
+        window.location.reload();
+        return "Chat renamed successfully";
+      },
+      error: (err) => {
+        console.error("Rename error:", err);
+        return "Failed to rename chat";
+      }
+    });
+
+    setShowRenameDialog(false);
   };
 
   return (
@@ -182,6 +235,7 @@ export const History = ({ user }: { user: User | undefined }) => {
                       <Link
                         href={`/chat/${chat.id}`}
                         className="text-ellipsis overflow-hidden text-left py-2 pl-2 rounded-lg outline-zinc-900"
+                        onClick={() => setIsHistoryVisible(false)}         
                       >
                         {getTitleFromChat(chat)}
                       </Link>
@@ -196,7 +250,24 @@ export const History = ({ user }: { user: User | undefined }) => {
                           <MoreHorizontalIcon />
                         </Button>
                       </DropdownMenuTrigger>
+
                       <DropdownMenuContent side="left" className="z-[60]">
+                      <DropdownMenuItem asChild>
+                          <Button
+                            className="flex flex-row gap-2 items-center justify-start w-full h-fit font-normal p-1.5 rounded-sm bg-transparent hover:bg-transparent/30"
+                            variant="ghost"
+                            onClick={() => {
+                              setRenameId(chat.id);
+                              const currentTitle = getTitleFromChat(chat);
+                              setNewTitle(currentTitle);
+                              setShowRenameDialog(true);
+                            }}
+                          >
+                            <PencilEditIcon />
+                            <div>Rename</div>
+                          </Button>
+                        </DropdownMenuItem>
+
                         <DropdownMenuItem asChild>
                           <Button
                             className="flex flex-row gap-2 items-center justify-start w-full h-fit font-normal p-1.5 rounded-sm"
@@ -232,6 +303,41 @@ export const History = ({ user }: { user: User | undefined }) => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>
               Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
+        <AlertDialogContent className="bg-black/40 backdrop-blur-md border border-gray-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Rename Chat</AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter a new name for this chat.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="my-4">
+            <input
+              type="text"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              className="w-full p-2 bg-black/20 border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
+              placeholder="Enter new title"
+              autoFocus
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              className="bg-transparent hover:bg-transparent/30 text-white"
+              onClick={() => setShowRenameDialog(false)}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-transparent hover:bg-transparent/30 text-white" 
+              onClick={handleRename}
+            >
+              Rename
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

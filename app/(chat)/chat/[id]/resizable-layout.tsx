@@ -81,10 +81,12 @@ export function ResizableLayout({
     <div id="resizable-container" className="flex h-screen p-2">
       {/* Live transcript Chat component */}
       <div 
-        className="border rounded-md p-2 overflow-hidden"
+        className="flex-1 pt-12 border rounded-md p-2 overflow-hidden"
         style={{ width: `${leftPanelWidth}%` }}
       >
-        <LiveTranscript />
+        <div className="text-xs">
+          <LiveTranscript />
+        </div>
       </div>
 
       {/* Resizer handle */}
