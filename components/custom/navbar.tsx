@@ -40,6 +40,16 @@ export const Navbar = async () => {
               <DropdownMenuItem>
                 <ThemeToggle />
               </DropdownMenuItem>
+
+              <DropdownMenuItem>
+                  <button
+                    type="submit"
+                    className="w-full text-left"
+                  >
+                  Setting
+                  </button>
+              </DropdownMenuItem>
+              
               <DropdownMenuItem className="p-1 z-50">
                 <form
                   className="w-full"

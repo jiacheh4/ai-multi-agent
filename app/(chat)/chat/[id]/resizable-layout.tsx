@@ -47,14 +47,14 @@ function Resizer({ onResize }: { onResize: (newPosition: number) => void }) {
   
   return (
     <div
-      className="w-1 bg-gray-300 hover:bg-gray-400 cursor-col-resize active:bg-blue-500 flex-shrink-0 flex items-center justify-center"
+      className="w-1 bg-gray-300 hover:bg-gray-400 cursor-col-resize active:bg-blue-500 shrink-0 flex items-center justify-center"
       onMouseDown={handleMouseDown}
     >
       {/* Add visual handle dots */}
       <div className="flex flex-col gap-1">
-        <div className="w-1 h-1 rounded-full bg-gray-500"></div>
-        <div className="w-1 h-1 rounded-full bg-gray-500"></div>
-        <div className="w-1 h-1 rounded-full bg-gray-500"></div>
+        <div className="size-1 rounded-full bg-gray-500"></div>
+        <div className="size-1 rounded-full bg-gray-500"></div>
+        <div className="size-1 rounded-full bg-gray-500"></div>
       </div>
     </div>
   );
@@ -81,7 +81,7 @@ export function ResizableLayout({
     <div id="resizable-container" className="flex h-screen p-2">
       {/* Live transcript Chat component */}
       <div 
-        className="flex-1 pt-12 border rounded-md p-2 overflow-hidden"
+        className="flex-1 pt-12 border rounded-md p-2"
         style={{ width: `${leftPanelWidth}%` }}
       >
         <div className="text-xs">
