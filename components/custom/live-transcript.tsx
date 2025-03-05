@@ -134,40 +134,40 @@ export const LiveTranscript = () => {
     }
   };
 
-  const handleAskGPT = async () => {
-    if (!config.openaiKey) {
-      alert('Please set up OpenAI API Key in settings');
-      return;
-    }
+  // const handleAskGPT = async () => {
+  //   if (!config.openaiKey) {
+  //     alert('Please set up OpenAI API Key in settings');
+  //     return;
+  //   }
 
-    setIsProcessing(true);
-    try {
-      const openai = new OpenAI({ 
-        apiKey: config.openaiKey, 
-        dangerouslyAllowBrowser: true 
-      });
+  //   setIsProcessing(true);
+  //   try {
+  //     const openai = new OpenAI({ 
+  //       apiKey: config.openaiKey, 
+  //       dangerouslyAllowBrowser: true 
+  //     });
 
-      const fullPrompt = `${config.systemPrompt}\n${transcript}`;
+  //     const fullPrompt = `${config.systemPrompt}\n${transcript}`;
 
-      const stream = await openai.chat.completions.create({
-        model: config.gptModel,
-        messages: [{ role: "user", content: fullPrompt }],
-        stream: true,
-      });
+  //     const stream = await openai.chat.completions.create({
+  //       model: config.gptModel,
+  //       messages: [{ role: "user", content: fullPrompt }],
+  //       stream: true,
+  //     });
 
-      let responseText = '';
-      for await (const chunk of stream) {
-        const text = chunk.choices[0]?.delta?.content || "";
-        responseText += text;
-        setAiResponse(responseText);
-      }
-    } catch (error) {
-      console.error('GPT Request Error:', error);
-      setAiResponse(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  //     let responseText = '';
+  //     for await (const chunk of stream) {
+  //       const text = chunk.choices[0]?.delta?.content || "";
+  //       responseText += text;
+  //       setAiResponse(responseText);
+  //     }
+  //   } catch (error) {
+  //     console.error('GPT Request Error:', error);
+  //     setAiResponse(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  //   } finally {
+  //     setIsProcessing(false);
+  //   }
+  // };
   
   return (
       <div className="flex-[1] rounded-md p-1 overflow-hidden h-full flex flex-col gap-2">
@@ -212,7 +212,7 @@ export const LiveTranscript = () => {
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-xl font-bold">GPT Response</h2>
               <button 
-                onClick={handleAskGPT} 
+                
                 disabled={!transcript || isProcessing}
                 className="bg-green-500 text-white px-2 py-1 rounded disabled:opacity-50"
               >
