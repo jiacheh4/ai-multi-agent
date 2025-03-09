@@ -196,17 +196,27 @@ export const LiveTranscript = () => {
     setTranscript('');
   };
 
-  const handleSendTranscript = () => {
+  const handleSendTranscript = async () => {
     if (!transcript) return;
-    
-    // You can implement your send logic here
-    console.log("Sending transcript:", transcript);
-    
-    // For demo purposes, let's just log the transcript
-    alert(`Transcript sent: ${transcript.substring(0, 50)}${transcript.length > 50 ? '...' : ''}`);
-    
-    // Optionally clear the transcript after sending
-    // setTranscript('');
+    try {
+      setIsProcessing(true);
+      
+      // Create a custom event with the transcript data
+      const transcriptEvent = new CustomEvent('transcript-message', {
+        detail: { content: transcript }
+      });
+      
+      // Dispatch the event to the window
+      window.dispatchEvent(transcriptEvent);
+      
+      // Clear the transcript after sending
+      setTranscript('');
+      console.log("Transcript event dispatched:", transcript);
+    } catch (error) {
+      console.error("Error dispatching transcript event:", error);
+    } finally {
+      setIsProcessing(false);
+    }
   };
   
   return (
@@ -275,14 +285,14 @@ export const LiveTranscript = () => {
               <button 
                 onClick={handleSendTranscript}
                 className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex-1"
-                disabled={!transcript}
+                disabled={!transcript || isProcessing}
               >
-                Send
+                {isProcessing ? 'Sending...' : 'Send'}
               </button>
               <button 
                 onClick={handleClearTranscript}
                 className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 flex-1"
-                disabled={!transcript}
+                disabled={!transcript || isProcessing}
               >
                 Clear
               </button>

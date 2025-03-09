@@ -9,6 +9,13 @@ import { Message as PreviewMessage } from "@/components/custom/message";
 import { MultimodalInput } from "./multimodal-input";
 import { Overview } from "./overview";
 
+// Add this type definition for the custom event
+declare global {
+  interface WindowEventMap {
+    'transcript-message': CustomEvent<{ content: string }>;
+  }
+}
+
 export function Chat({
   id,
   initialMessages,
@@ -27,6 +34,28 @@ export function Chat({
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
+
+  // Add the event listener for the transcript message
+  useEffect(() => {
+    // Event handler function
+    const handleTranscriptMessage = (event: CustomEvent<{ content: string }>) => {
+      if (event.detail && event.detail.content) {
+        // Send the transcript content using append
+        append({
+          role: 'user',
+          content: event.detail.content,
+        });
+      }
+    };
+
+    // Add event listener when component mounts
+    window.addEventListener('transcript-message', handleTranscriptMessage as EventListener);
+
+    // Remove event listener when component unmounts
+    return () => {
+      window.removeEventListener('transcript-message', handleTranscriptMessage as EventListener);
+    };
+  }, [append]); // Include append in the dependency array
 
   // Scroll to the bottom when messages are first loaded
   useEffect(() => {
@@ -54,16 +83,6 @@ export function Chat({
           />
         ))
       )}
-
-        {/* {messages.map((message) => (
-          <PreviewMessage
-            key={message.id}
-            role={message.role}
-            content={message.content}
-            attachments={message.experimental_attachments}
-            toolInvocations={message.toolInvocations}
-          />
-        ))} */}
 
         {/* Placeholder to keep scroll position at the bottom */}
         <div ref={messagesEndRef} className="shrink-0 min-w-[24px] min-h-[24px]" />
