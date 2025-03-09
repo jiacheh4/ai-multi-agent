@@ -115,12 +115,40 @@ export const LiveTranscript = () => {
       const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
       recognizerRef.current = recognizer;
 
-      // Handle recognition events
+      // Add recognizing event to get interim results
+      recognizer.recognizing = (s, e) => {
+        if (e.result.reason === SpeechSDK.ResultReason.RecognizingSpeech) {
+          const text = e.result.text;
+          if (text.length > 0) {
+            // Update with interim results as they come in
+            setTranscript(prev => {
+              // Find the last completed sentence/phrase (if any)
+              const lastNewlineIndex = prev.lastIndexOf('\n');
+              if (lastNewlineIndex === -1) {
+                // No previous completed phrases
+                return text;
+              } else {
+                // Replace just the current interim phrase
+                return prev.substring(0, lastNewlineIndex + 1) + text;
+              }
+            });
+          }
+        }
+      };
+
+      // Handle final recognition events
       recognizer.recognized = (s, e) => {
         if (e.result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
           const text = e.result.text;
           if (text.length > 0) {
-            setTranscript(prev => prev + '\n' + text);
+            setTranscript(prev => {
+              // Add a new line for the final recognized text
+              if (prev.length > 0 && !prev.endsWith('\n')) {
+                return prev + '\n' + text;
+              } else {
+                return prev + text;
+              }
+            });
           }
         }
       };
