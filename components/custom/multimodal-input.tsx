@@ -2,6 +2,7 @@
 
 import { Attachment, ChatRequestOptions, CreateMessage, Message } from "ai";
 import { motion } from "framer-motion";
+import { ClipboardPaste } from 'lucide-react';
 import React, {
   useRef,
   useEffect,
@@ -226,7 +227,7 @@ export function MultimodalInput({
         value={input}
         onChange={handleInput}
         className="min-h-[24px] max-h-[300px] overflow-y-auto resize-y rounded-lg text-base bg-muted"
-        rows={1}
+        rows={2}
         onKeyDown={(event) => {
           if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
@@ -242,29 +243,59 @@ export function MultimodalInput({
 
       {isLoading ? (
         <Button
-          className="rounded-full p-1.5 h-fit absolute bottom-2 right-2 m-0.5"
+          className="rounded-full p-1.5 h-fit absolute bottom-1 right-2 m-0.5"
           onClick={(event) => {
             event.preventDefault();
             stop();
           }}
         >
-          <StopIcon size={14} />
+          <StopIcon size={16} />
         </Button>
       ) : (
         <Button
-          className="rounded-full p-1.5 h-fit absolute bottom-2 right-2 m-0.5"
+          className="rounded-full p-1.5 h-fit absolute bottom-1.5 right-2 m-0.5"
           onClick={(event) => {
             event.preventDefault();
             submitForm();
           }}
           disabled={input.length === 0 || uploadQueue.length > 0}
         >
-          <ArrowUpIcon size={14} />
+          <ArrowUpIcon size={16} />
         </Button>
       )}
 
       <Button
-        className="rounded-full p-1.5 h-fit absolute bottom-2 right-10 m-0.5 dark:border-zinc-700"
+        className="rounded-full p-1.5 h-fit absolute bottom-1 right-10 m-0.5 dark:border-zinc-700"
+        onClick={async (event) => {
+          event.preventDefault();
+          try {
+            const clipboardText = await navigator.clipboard.readText();
+            setInput(clipboardText);
+            
+            // Adjust textarea height after pasting content
+            if (textareaRef.current) {
+              setTimeout(() => {
+                if (textareaRef.current) { // Additional null check inside setTimeout
+                  textareaRef.current.style.height = "auto";
+                  textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 2}px`;
+                }
+              }, 0);
+            }
+          } catch (error) {
+            console.error('Failed to read clipboard:', error);
+            toast.error('Failed to read clipboard. Make sure you granted permission.');
+          }
+        }}
+        variant="outline"
+        disabled={isLoading}
+      >
+        <span className="flex items-center justify-center gap-2">
+          {<ClipboardPaste size={16} />}
+        </span>
+      </Button>
+
+      <Button
+        className="rounded-full p-1.5 h-fit absolute bottom-1 right-15 ml-1 dark:border-zinc-700"
         onClick={(event) => {
           event.preventDefault();
           fileInputRef.current?.click();

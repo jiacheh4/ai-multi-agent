@@ -1,6 +1,6 @@
 "use client"; // Specify that this is a client component
 
-import { Mic, MicOff, Speaker, Headphones } from 'lucide-react';
+import { Mic, MicOff, Speaker } from 'lucide-react';
 import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
 import React, { useEffect, useState, useRef } from 'react';
 
