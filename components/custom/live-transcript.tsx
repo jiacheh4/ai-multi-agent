@@ -200,21 +200,22 @@ export const LiveTranscript = () => {
   };
 
   const handleSendTranscript = async () => {
-    if (!transcript) return;
+    // Combine the finalized transcript with any interim results
+    const fullTranscript = transcript + (interimResult ? 
+      (transcript && !transcript.endsWith('\n') ? '\n' : '') + interimResult : '');
+      
+    if (!fullTranscript) return;
     try {
       setIsProcessing(true);
-      
-      // Create a custom event with the transcript data
+      // Create a custom event with the combined transcript data
       const transcriptEvent = new CustomEvent('transcript-message', {
-        detail: { content: transcript }
+        detail: { content: fullTranscript }
       });
-      
+
       // Dispatch the event to the window
       window.dispatchEvent(transcriptEvent);
       
-      // Clear the transcript after sending
-      setTranscript('');
-      console.log("Transcript event dispatched:", transcript);
+      console.log("Transcript event dispatched:", fullTranscript);
     } catch (error) {
       console.error("Error dispatching transcript event:", error);
     } finally {
