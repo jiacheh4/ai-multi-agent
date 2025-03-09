@@ -1,6 +1,6 @@
 "use client"; // Specify that this is a client component
 
-import { Mic, MicOff } from 'lucide-react';
+import { Mic, MicOff, Speaker, Headphones } from 'lucide-react';
 import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
 import React, { useEffect, useState, useRef } from 'react';
 
@@ -10,6 +10,7 @@ export const LiveTranscript = () => {
   const [aiResponse, setAiResponse] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [audioSource, setAudioSource] = useState<'microphone' | 'system'>('microphone');
 
   // Refs for speech recognizer and timer
   const recognizerRef = useRef<SpeechSDK.SpeechRecognizer | null>(null);
@@ -63,6 +64,12 @@ export const LiveTranscript = () => {
     };
     setConfig(loadedConfig);
 
+    // Try to load saved audio source preference
+    const savedAudioSource = localStorage.getItem('audio_source');
+    if (savedAudioSource === 'microphone' || savedAudioSource === 'system') {
+      setAudioSource(savedAudioSource);
+    }
+
     // Cleanup function
     return () => {
       // Stop recognition and timer if component unmounts
@@ -71,7 +78,12 @@ export const LiveTranscript = () => {
     };
   }, []);
 
-  const startCopilot = () => {
+  // Save audio source preference whenever it changes
+  useEffect(() => {
+    localStorage.setItem('audio_source', audioSource);
+  }, [audioSource]);
+
+  const startVoiceRecognition = () => {
     const { azureToken, azureRegion, language } = config;
 
     // Validate configurations
@@ -85,8 +97,19 @@ export const LiveTranscript = () => {
       const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(azureToken, azureRegion);
       speechConfig.speechRecognitionLanguage = language;
 
-      // Use default microphone input
-      const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+      // Create audio config based on selected source
+      let audioConfig;
+      if (audioSource === 'microphone') {
+        audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+      } else {
+        // System audio requires permission and might not work in all browsers
+        try {
+          audioConfig = SpeechSDK.AudioConfig.fromDefaultSpeakerOutput();
+        } catch (error) {
+          setTranscript(`Error: System audio capture not supported or permission denied. ${error instanceof Error ? error.message : 'Unknown error'}`);
+          return;
+        }
+      }
 
       // Create speech recognizer
       const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
@@ -119,7 +142,7 @@ export const LiveTranscript = () => {
     }
   };
 
-  const stopCopilot = () => {
+  const stopVoiceRecognition = () => {
     if (recognizerRef.current) {
       recognizerRef.current.stopContinuousRecognitionAsync(
         () => {
@@ -134,126 +157,111 @@ export const LiveTranscript = () => {
     }
   };
 
-  // const handleAskGPT = async () => {
-  //   if (!config.openaiKey) {
-  //     alert('Please set up OpenAI API Key in settings');
-  //     return;
-  //   }
+  const toggleAudioSource = () => {
+    // Only allow toggling when not actively listening
+    if (!isListening) {
+      setAudioSource(prev => prev === 'microphone' ? 'system' : 'microphone');
+    }
+  };
 
-  //   setIsProcessing(true);
-  //   try {
-  //     const openai = new OpenAI({ 
-  //       apiKey: config.openaiKey, 
-  //       dangerouslyAllowBrowser: true 
-  //     });
+  const handleClearTranscript = () => {
+    setTranscript('');
+  };
 
-  //     const fullPrompt = `${config.systemPrompt}\n${transcript}`;
-
-  //     const stream = await openai.chat.completions.create({
-  //       model: config.gptModel,
-  //       messages: [{ role: "user", content: fullPrompt }],
-  //       stream: true,
-  //     });
-
-  //     let responseText = '';
-  //     for await (const chunk of stream) {
-  //       const text = chunk.choices[0]?.delta?.content || "";
-  //       responseText += text;
-  //       setAiResponse(responseText);
-  //     }
-  //   } catch (error) {
-  //     console.error('GPT Request Error:', error);
-  //     setAiResponse(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  //   } finally {
-  //     setIsProcessing(false);
-  //   }
-  // };
+  const handleSendTranscript = () => {
+    if (!transcript) return;
+    
+    // You can implement your send logic here
+    console.log("Sending transcript:", transcript);
+    
+    // For demo purposes, let's just log the transcript
+    alert(`Transcript sent: ${transcript.substring(0, 50)}${transcript.length > 50 ? '...' : ''}`);
+    
+    // Optionally clear the transcript after sending
+    // setTranscript('');
+  };
   
   return (
       <div className="flex-[1] rounded-md p-1 overflow-hidden h-full flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <div className="text-lg font-semibold">
-            {formatTime(elapsedTime)}
-          </div>
           <div className="flex gap-2">
+            {/* Start/Stop button */}
             {!isListening ? (
               <button 
-                onClick={startCopilot} 
+                onClick={startVoiceRecognition} 
                 className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
               >
                 <span className="flex items-center justify-center gap-1">
-                {<Mic size={16} />}
-                { 'Start Listening' }
+                {audioSource === 'microphone' ? <Mic size={16} /> : <Speaker size={16} />}
+                { 'Start' }
                 </span>
               </button>
             ) : (
               <button 
-                onClick={stopCopilot} 
+                onClick={stopVoiceRecognition} 
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
               >
                 <span className="flex items-center justify-center gap-2">
                   {<MicOff size={16} />}
-                  { 'Stop Listening' }
+                  { 'Stop' }
                 </span>
               </button>
             )}
+
+            {/* Audio source selector */}
+            <button
+              onClick={toggleAudioSource}
+              disabled={isListening}
+              className="flex items-center gap-1 p-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+              title={isListening ? "Can't change audio source while listening" : "Toggle audio source"}
+            >
+              {audioSource === 'microphone' ? (
+                <>
+                  <Mic size={16} />
+                  <span>Mic</span>
+                </>
+              ) : (
+                <>
+                  <Speaker size={16} />
+                  <span>Sys</span>
+                </>
+              )}
+            </button>
+          </div>
+          
+          {/* Elapsed time */}
+          <div className="text-lg font-semibold">
+            {formatTime(elapsedTime)}
           </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div className="border rounded p-2">
-            <h2 className="text-xl font-bold mb-2">Live Transcript</h2>
-            <div className="h-48 overflow-auto">
-              <p>{transcript || "Speak something..."}</p>
+        
+        
+        {/* Transcript display */}
+        <div className="grid grid-cols-1 gap-2 h-96">
+          <div className="border rounded p-2 flex flex-col">
+            <h2 className="text-xs font-bold mb-2">Live Transcript</h2>
+            <div className="h-72 overflow-auto mb-2 grow">
+              <p>{transcript || `Ready to transcribe from ${audioSource === 'microphone' ? 'microphone' : 'system audio'}...`}</p>
             </div>
-          </div>
-
-          <div className="border rounded p-2">
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xl font-bold">GPT Response</h2>
+            <div className="flex gap-2 mt-auto">
               <button 
-                
-                disabled={!transcript || isProcessing}
-                className="bg-green-500 text-white px-2 py-1 rounded disabled:opacity-50"
+                onClick={handleSendTranscript}
+                className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex-1"
+                disabled={!transcript}
               >
-                {isProcessing ? 'Processing...' : 'Ask GPT'}
+                Send
+              </button>
+              <button 
+                onClick={handleClearTranscript}
+                className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 flex-1"
+                disabled={!transcript}
+              >
+                Clear
               </button>
             </div>
-            <div className="h-48 overflow-auto">
-              {isProcessing ? (
-                <div>Generating response...</div>
-              ) : (
-                <p>{aiResponse || "No response yet"}</p>
-              )}
-            </div>
           </div>
         </div>
+        
       </div>
     );
   };
-
-
-//   return (
-//     <div className="flex-[1] rounded-md p-1 overflow-hidden h-full flex flex-col">
-//       <button 
-//         onClick={handleListen} 
-//         className={`w-full text-white rounded p-2 transition-colors ${
-//           isListening 
-//             ? 'bg-red-500 hover:bg-red-600' 
-//             : 'bg-blue-500 hover:bg-blue-600'
-//         }`}>
-//         <span className="flex items-center justify-center gap-2">
-//           {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-//           {isListening ? 'Stop Listening' : 'Start Listening'}
-//         </span>
-//       </button>
-//       <h2 className="text-xl font-bold mt-2 mb-1">Live Transcript</h2>
-//       <div className="flex-1 overflow-auto">
-//         <div className="mt-auto border-t pt-2">
-//           <h3 className="font-semibold">Transcript:</h3>
-//           <p>{transcript || "Speak something..."}</p>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
