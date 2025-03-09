@@ -4,10 +4,17 @@ import { Mic, MicOff, Speaker } from 'lucide-react';
 import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
 import React, { useEffect, useState, useRef } from 'react';
 
+// Add type definition for the custom event
+declare global {
+  interface WindowEventMap {
+    'transcript-message': CustomEvent<{ content: string }>;
+  }
+}
+
 export const LiveTranscript = () => {
   const [transcript, setTranscript] = useState('');
+  const [interimResult, setInterimResult] = useState(''); // New state for interim results
   const [isListening, setIsListening] = useState(false);
-  const [aiResponse, setAiResponse] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [audioSource, setAudioSource] = useState<'microphone' | 'system'>('microphone');
@@ -115,34 +122,27 @@ export const LiveTranscript = () => {
       const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
       recognizerRef.current = recognizer;
 
-      // Add recognizing event to get interim results
+      // Handle interim recognition events (while speaking)
       recognizer.recognizing = (s, e) => {
         if (e.result.reason === SpeechSDK.ResultReason.RecognizingSpeech) {
           const text = e.result.text;
           if (text.length > 0) {
-            // Update with interim results as they come in
-            setTranscript(prev => {
-              // Find the last completed sentence/phrase (if any)
-              const lastNewlineIndex = prev.lastIndexOf('\n');
-              if (lastNewlineIndex === -1) {
-                // No previous completed phrases
-                return text;
-              } else {
-                // Replace just the current interim phrase
-                return prev.substring(0, lastNewlineIndex + 1) + text;
-              }
-            });
+            // Update only the interim result, not the main transcript
+            setInterimResult(text);
           }
         }
       };
 
-      // Handle final recognition events
+      // Handle final recognition events (after pause in speech)
       recognizer.recognized = (s, e) => {
         if (e.result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
           const text = e.result.text;
           if (text.length > 0) {
+            // Clear the interim result
+            setInterimResult('');
+            
+            // Add the final result to the transcript
             setTranscript(prev => {
-              // Add a new line for the final recognized text
               if (prev.length > 0 && !prev.endsWith('\n')) {
                 return prev + '\n' + text;
               } else {
@@ -176,6 +176,8 @@ export const LiveTranscript = () => {
         () => {
           setIsListening(false);
           stopTimer();
+          // Clear any remaining interim result
+          setInterimResult('');
           console.log('Recognition stopped');
         },
         (err) => {
@@ -194,6 +196,7 @@ export const LiveTranscript = () => {
 
   const handleClearTranscript = () => {
     setTranscript('');
+    setInterimResult('');
   };
 
   const handleSendTranscript = async () => {
@@ -279,7 +282,18 @@ export const LiveTranscript = () => {
           <div className="border rounded p-2 flex flex-col">
             <h2 className="text-xs font-bold mb-2">Live Transcript</h2>
             <div className="h-72 overflow-auto mb-2 grow">
-              <p>{transcript || `Ready to transcribe from ${audioSource === 'microphone' ? 'microphone' : 'system audio'}...`}</p>
+              <p>
+                {transcript}
+                {interimResult && (
+                  <>
+                    {transcript && !transcript.endsWith('\n') && '\n'}
+                    <span className="text-gray-500 italic">{interimResult}</span>
+                  </>
+                )}
+                {!transcript && !interimResult && 
+                  `Ready to transcribe from ${audioSource === 'microphone' ? 'microphone' : 'system audio'}...`
+                }
+              </p>
             </div>
             <div className="flex gap-2 mt-auto">
               <button 
@@ -292,7 +306,7 @@ export const LiveTranscript = () => {
               <button 
                 onClick={handleClearTranscript}
                 className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 flex-1"
-                disabled={!transcript || isProcessing}
+                disabled={(!transcript && !interimResult) || isProcessing}
               >
                 Clear
               </button>
