@@ -10,9 +10,9 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
       return !inline && match ? (
         <pre
           {...props}
-          className={`${className} text-sm w-[80dvw] md:max-w-[500px] overflow-x-scroll bg-zinc-100 p-3 rounded-lg mt-2 dark:bg-zinc-800`}
+          className={`${className} text-sm w-full overflow-x-auto bg-zinc-100 p-3 rounded-lg mt-2 dark:bg-zinc-800`}
         >
-          <code className={match[1]}>{children}</code>
+          <code className={`${match[1]} `}>{children}</code>
         </pre>
       ) : (
         <code
@@ -25,7 +25,7 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
     },
     ol: ({ node, children, ...props }: any) => {
       return (
-        <ol className="list-decimal list-outside ml-4" {...props}>
+        <ol className="list-decimal list-outside ml-6 my-2 space-y-1" {...props}>
           {children}
         </ol>
       );
@@ -39,14 +39,14 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
     },
     ul: ({ node, children, ...props }: any) => {
       return (
-        <ul className="list-decimal list-outside ml-4" {...props}>
+        <ul className="list-decimal list-outside ml-6 my-2 space-y-1" {...props}>
           {children}
         </ul>
       );
     },
     strong: ({ node, children, ...props }: any) => {
       return (
-        <span className="font-semibold" {...props}>
+        <span className="font-semibold text-zinc-900 dark:text-zinc-100" {...props}>
           {children}
         </span>
       );
@@ -62,6 +62,75 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
           {children}
         </Link>
       );
+    },
+    p: ({ node, children, ...props }: any) => {
+
+      return (
+
+        <p className="my-2" {...props}>
+
+          {children}
+
+        </p>
+
+      );
+
+    },
+
+    h1: ({ node, children, ...props }: any) => {
+
+      return (
+
+        <h1 className="text-xl font-bold mt-4 mb-2 text-zinc-900 dark:text-zinc-100" {...props}>
+
+          {children}
+
+        </h1>
+
+      );
+
+    },
+
+    h2: ({ node, children, ...props }: any) => {
+
+      return (
+
+        <h2 className="text-lg font-bold mt-4 mb-2 text-zinc-900 dark:text-zinc-100" {...props}>
+
+          {children}
+
+        </h2>
+
+      );
+
+    },
+
+    h3: ({ node, children, ...props }: any) => {
+
+      return (
+
+        <h3 className="text-md font-bold mt-3 mb-1 text-zinc-900 dark:text-zinc-100" {...props}>
+
+          {children}
+
+        </h3>
+
+      );
+
+    },
+
+    blockquote: ({ node, children, ...props }: any) => {
+
+      return (
+
+        <blockquote className="border-l-4 border-zinc-300 dark:border-zinc-600 pl-4 py-1 my-2 text-zinc-700 dark:text-zinc-300 italic" {...props}>
+
+          {children}
+
+        </blockquote>
+
+      );
+
     },
   };
 

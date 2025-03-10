@@ -83,7 +83,7 @@ export const LiveTranscript = () => {
       recognizerRef.current?.stopContinuousRecognitionAsync();
       stopTimer();
     };
-  }, []);
+  }, [config.azureToken, config.azureRegion, config.language, config.openaiKey, config.gptModel]);
 
   // Save audio source preference whenever it changes
   useEffect(() => {
@@ -203,7 +203,7 @@ export const LiveTranscript = () => {
     // Combine the finalized transcript with any interim results
     const fullTranscript = transcript + (interimResult ? 
       (transcript && !transcript.endsWith('\n') ? '\n' : '') + interimResult : '');
-      
+
     if (!fullTranscript) return;
     try {
       setIsProcessing(true);

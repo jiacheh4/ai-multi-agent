@@ -137,7 +137,7 @@ export function Chat({
       {!shouldAutoScroll && messages.length > 0 && (
         <button
           onClick={scrollToBottom}
-          className="fixed bottom-[85px] right-[938px] px-3 py-2  bg-primary text-primary-foreground rounded-full shadow-md hover:bg-primary/90 transition-all"
+          className="absolute bottom-28 px-3 py-2 bg-primary text-primary-foreground rounded-full shadow-md hover:bg-primary/90 transition-all"
           aria-label="Scroll to bottom"
         >
           <svg 
