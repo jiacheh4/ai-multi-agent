@@ -15,6 +15,8 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  const isO3Mini = customModel.modelId === "o3-mini";
+
   const coreMessages = convertToCoreMessages(messages);
 
   const result = await streamText({
@@ -48,6 +50,9 @@ export async function POST(request: Request) {
 
     messages: coreMessages,
     maxSteps: 5,
+
+    ...(isO3Mini ? {temperature: 1, topP: 1} : {}),
+
     tools: {
       getWeather: {
         description: "Get the current weather at a location",
