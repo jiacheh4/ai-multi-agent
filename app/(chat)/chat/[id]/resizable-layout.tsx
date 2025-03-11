@@ -68,36 +68,38 @@ export function ResizableLayout({
   initialMessages: Array<Message>;
 }) {
   // percentage of total width
-  const [leftPanelWidth, setLeftPanelWidth] = useState(20); 
+  const [leftPanelWidth, setLeftPanelWidth] = useState(60); 
   
   const handleResize = useCallback((newPositionPercentage: number) => {
     // Directly set the width to the mouse position with constraints
     // Limit the resize range between 15% and 50%
-    const newWidth = Math.min(Math.max(newPositionPercentage, 15), 50);
+    const newWidth = Math.min(Math.max(newPositionPercentage, 40), 80);
     setLeftPanelWidth(newWidth);
   }, []);
 
   return (
     <div id="resizable-container" className="flex h-screen p-2">
-      {/* Live transcript Chat component */}
+      {/* Main Chat component with input */}
       <div 
-        className="flex-1 pt-12 border rounded-md p-2"
+        className="border rounded-md p-2 overflow-hidden"
         style={{ width: `${leftPanelWidth}%` }}
       >
-        <div className="text-xs">
-          <LiveTranscript />
-        </div>
+        <PreviewChat id={chatId} initialMessages={initialMessages} />
       </div>
+
+      
 
       {/* Resizer handle */}
       <Resizer onResize={handleResize} />
 
-      {/* Main Chat component with input */}
+      {/* Live transcript Chat component */}
       <div 
-        className="border rounded-md p-2 overflow-hidden"
+        className="flex-1 pt-12 border rounded-md p-2"
         style={{ width: `${100 - leftPanelWidth}%` }}
       >
-        <PreviewChat id={chatId} initialMessages={initialMessages} />
+        <div className="text-xs">
+          <LiveTranscript />
+        </div>
       </div>
       
     </div>

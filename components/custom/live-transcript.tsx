@@ -227,56 +227,54 @@ export const LiveTranscript = () => {
       <div className="flex-[1] rounded-md p-1 overflow-hidden h-full flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
-            {/* Start/Stop button */}
-            {!isListening ? (
-              <button 
-                onClick={startVoiceRecognition} 
-                className="bg-blue-500 text-white p-3 rounded hover:bg-blue-600"
-              >
-                <span className="flex items-center justify-center gap-1">
-                {audioSource === 'microphone' ? <Mic size={16} /> : <Speaker size={16} />}
-                { 'Start' }
-                </span>
-              </button>
+            {/* Elapsed time */}
+            <div className="text-lg font-semibold">
+              {formatTime(elapsedTime)}
+            </div>
+          </div>
+          {/* Audio source selector */}
+          <button
+            onClick={toggleAudioSource}
+            disabled={isListening}
+            className="flex items-center gap-1 p-1 border rounded hover:bg-gray-100 disabled:opacity-50"
+            title={isListening ? "Can't change audio source while listening" : "Toggle audio source"}
+          >
+            {audioSource === 'microphone' ? (
+              <>
+                <Mic size={16} />
+                <span>Mic</span>
+              </>
             ) : (
-              <button 
-                onClick={stopVoiceRecognition} 
-                className="bg-red-500 text-white p-3 rounded hover:bg-red-600"
-              >
-                <span className="flex items-center justify-center gap-2">
-                  {<MicOff size={16} />}
-                  { 'Stop' }
-                </span>
-              </button>
+              <>
+                <Speaker size={16} />
+                <span>Sys</span>
+              </>
             )}
+          </button>
 
-            {/* Audio source selector */}
-            <button
-              onClick={toggleAudioSource}
-              disabled={isListening}
-              className="flex items-center gap-1 p-1 border rounded hover:bg-gray-100 disabled:opacity-50"
-              title={isListening ? "Can't change audio source while listening" : "Toggle audio source"}
+          {/* Start/Stop button */}
+          {!isListening ? (
+            <button 
+              onClick={startVoiceRecognition} 
+              className="bg-blue-500 text-white p-3 rounded hover:bg-blue-600"
             >
-              {audioSource === 'microphone' ? (
-                <>
-                  <Mic size={16} />
-                  <span>Mic</span>
-                </>
-              ) : (
-                <>
-                  <Speaker size={16} />
-                  <span>Sys</span>
-                </>
-              )}
+              <span className="flex items-center justify-center gap-1">
+              {audioSource === 'microphone' ? <Mic size={16} /> : <Speaker size={16} />}
+              { 'Start' }
+              </span>
             </button>
-          </div>
-          
-          {/* Elapsed time */}
-          <div className="text-lg font-semibold">
-            {formatTime(elapsedTime)}
-          </div>
+          ) : (
+            <button 
+              onClick={stopVoiceRecognition} 
+              className="bg-red-500 text-white p-3 rounded hover:bg-red-600"
+            >
+              <span className="flex items-center justify-center gap-2">
+                {<MicOff size={16} />}
+                { 'Stop' }
+              </span>
+            </button>
+          )}
         </div>
-        
         
         {/* Transcript display */}
         <div className="grid grid-cols-1 gap-2 h-96">
