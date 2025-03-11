@@ -1,13 +1,18 @@
 import { convertToCoreMessages, Message, streamText } from "ai";
 import { z } from "zod";
 
-import { customModel } from "@/ai";
+import { customModel, customSetting } from "@/ai";
 import { auth } from "@/app/(auth)/auth";
 import { deleteChatById, getChatById, saveChat } from "@/db/queries";
 
 export async function POST(request: Request) {
-  const { id, messages }: { id: string; messages: Array<Message> } =
-    await request.json();
+  const { 
+    id,
+    messages,
+  }: { 
+    id: string; 
+    messages: Array<Message>;
+   } = await request.json();
 
   const session = await auth();
 
@@ -21,36 +26,11 @@ export async function POST(request: Request) {
 
   const result = await streamText({
     model: customModel,
-    system:`
-    You are an Interview Assistant, playing the role of the interviewee (the user). 
-    Your responses should be well-structured, using the following format:
-
-    ### Title: 
-    Provide a clear and concise title for your response.
-
-    ### Summary:
-    Begin with a clear, concise summary of your main point or conclusion. This should directly address the question asked.
-
-    ### Key Points:
-    - Present logical and coherent statements that support your summary.
-    - Use **bold** text to highlight important concepts.
-    - Consider using _italics_ for emphasis on specific terms.
-
-    ### Supporting Details:
-    - For each key point, provide brief details or examples to back up your statements. 
-    - Ensure these examples are relevant and showcase your skills or experiences.
-
-    ### Code Example in Python (ignore this part if it is not coding question):
-    - If it is a coding question, please include the code in python, use the common approach first, and then optimal solutions, and then include follow-up questions.
-
-    Remember:
-    - Keep responses direct and to the point.
-    - Structure your answers logically to demonstrate critical thinking and problem-solving abilities.
-    - Ensure your answers are organized, detailed, and easy to read for maximum comprehension.`,
-
+    system: customSetting.systemMessage,
     messages: coreMessages,
     maxSteps: 5,
-
+    
+    // Bugfix: https://github.com/openai/openai-python/issues/2072
     ...(isO3Mini ? {temperature: 1, topP: 1} : {}),
 
     tools: {

@@ -231,7 +231,7 @@ export const LiveTranscript = () => {
             {!isListening ? (
               <button 
                 onClick={startVoiceRecognition} 
-                className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                className="bg-blue-500 text-white p-3 rounded hover:bg-blue-600"
               >
                 <span className="flex items-center justify-center gap-1">
                 {audioSource === 'microphone' ? <Mic size={16} /> : <Speaker size={16} />}
@@ -241,7 +241,7 @@ export const LiveTranscript = () => {
             ) : (
               <button 
                 onClick={stopVoiceRecognition} 
-                className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                className="bg-red-500 text-white p-3 rounded hover:bg-red-600"
               >
                 <span className="flex items-center justify-center gap-2">
                   {<MicOff size={16} />}
@@ -299,14 +299,14 @@ export const LiveTranscript = () => {
             <div className="flex gap-2 mt-auto">
               <button 
                 onClick={handleSendTranscript}
-                className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 flex-1"
+                className="bg-blue-500 text-white px-2 py-3 rounded hover:bg-blue-600 flex-1"
                 disabled={!transcript || isProcessing}
               >
                 {isProcessing ? 'Sending...' : 'Send'}
               </button>
               <button 
                 onClick={handleClearTranscript}
-                className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 flex-1"
+                className="bg-gray-500 text-white px-2 py-3 rounded hover:bg-gray-600 flex-1"
                 disabled={(!transcript && !interimResult) || isProcessing}
               >
                 Clear
