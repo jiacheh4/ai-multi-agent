@@ -2,7 +2,8 @@
 
 import { Attachment, Message } from "ai";
 import { useChat } from "ai/react";
-import { useEffect, useRef, useState } from "react";
+import { throttle } from "lodash";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 
 import { Message as PreviewMessage } from "@/components/custom/message";
 
@@ -38,6 +39,11 @@ export function Chat({
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const prevMessagesLengthRef = useRef(initialMessages.length);
 
+  // Add debounced rendering optimization
+  const visibleMessages = useMemo(() => {
+    return messages;
+  }, [messages]);
+  
   // Add the event listener for the transcript message
   useEffect(() => {
     // Event handler function
@@ -65,7 +71,8 @@ export function Chat({
     const container = containerRef.current;
     if (!container) return;
 
-    const handleScroll = () => {
+    // Use throttled scroll handler to improve performance
+    const handleScroll = throttle(() => {
       if (!container) return;
       
       const { scrollTop, scrollHeight, clientHeight } = container;
@@ -75,33 +82,62 @@ export function Chat({
       if (isAtBottom !== shouldAutoScroll) {
         setShouldAutoScroll(isAtBottom);
       }
-    };
+    }, 100); // Throttle to avoid excessive calculations
 
     container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
+    return () => {
+      handleScroll.cancel(); // Cancel any pending throttled calls
+      container.removeEventListener('scroll', handleScroll);
+    };
   }, [shouldAutoScroll]);
 
   // Handle initial load scrolling
   useEffect(() => {
     if (messages.length > 0 && messagesEndRef.current && shouldAutoScroll) {
-        messagesEndRef.current.scrollIntoView();
+      requestAnimationFrame(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
+        }
+      });
     }
 
     // Update previous message length
     prevMessagesLengthRef.current = messages.length;
   }, [messages, shouldAutoScroll]);
 
+  // separate the callback from throttle
+  const scrollToBottomCallback = useCallback(() => {
+    if (messagesEndRef.current && shouldAutoScroll) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      });
+    }
+  }, [shouldAutoScroll]);
+  
+  // Memoize the throttled version of the callback
+  const throttledScrollToBottom = useMemo(
+    () => throttle(scrollToBottomCallback, 250), // Throttle to max once every 100ms
+    [scrollToBottomCallback]
+  );
+  
+  // Cleanup throttle on unmount
+  useEffect(() => {
+    return () => {
+      throttledScrollToBottom.cancel();
+    };
+  }, [throttledScrollToBottom]);
+
   // Handle auto-scrolling during AI response generation
   useEffect(() => {
-    if (isLoading && shouldAutoScroll && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (isLoading && shouldAutoScroll) {
+      throttledScrollToBottom();
     }
-  }, [isLoading, shouldAutoScroll, messages]);
+  }, [isLoading, shouldAutoScroll, messages.length, throttledScrollToBottom]);
 
   // Manual scroll to bottom function
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
       setShouldAutoScroll(true);
     }
   };
@@ -113,12 +149,12 @@ export function Chat({
         ref={containerRef}
         className="grow flex flex-col gap-4 p-4 overflow-y-auto"
       >
-        {messages.length === 0 ? (
+        {visibleMessages.length === 0 ? (
           <div className="flex justify-center items-center grow">
             <Overview />
           </div>
         ) : (
-          messages.map((message) => (
+          visibleMessages.map((message) => (
             <PreviewMessage
               key={message.id}
               role={message.role}

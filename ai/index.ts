@@ -45,6 +45,7 @@ export const customSetting = {
           - Ensure these examples are relevant and demonstrate your understanding of the topic.
 
     Remember:
+    - Please format all code block/examples using triple backtick markdown syntax with language specification.
     - Use casual/conversational words, each explain in great detail
     - Ensure your answers are clear, logical, organized, detailed, and easy to read for maximum comprehension.
     - While the structure is essential, remain adaptable. If a question does not neatly fit into one of these categories, merge sections as appropriate while preserving clarity and thoroughness.`,

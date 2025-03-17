@@ -23,8 +23,9 @@ export const Message = ({
   return (
     <motion.div
     className={`flex flex-row gap-4 px-4 w-full md:px-0 first-of-type:pt-20 mb-6`}
-      initial={{ y: 5, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      initial={{ opacity: 0.8 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
     >
       {role === "assistant" && (
         <div className="size-[24px] flex flex-col justify-center items-center shrink-0 text-zinc-400">

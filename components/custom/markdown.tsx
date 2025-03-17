@@ -1,6 +1,8 @@
 import Link from "next/link";
 import React, { memo } from "react";
 import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import remarkGfm from "remark-gfm";
 
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
@@ -8,12 +10,15 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
     code: ({ node, inline, className, children, ...props }: any) => {
       const match = /language-(\w+)/.exec(className || "");
       return !inline && match ? (
-        <pre
+        <SyntaxHighlighter
+          style={oneDark}
+          language={match[1]}
+          PreTag="div"
+          className="rounded-lg my-2 text-sm"
           {...props}
-          className={`${className} text-sm w-full overflow-x-auto bg-zinc-100 p-3 rounded-lg mt-2 dark:bg-zinc-800`}
         >
-          <code className={`${match[1]} `}>{children}</code>
-        </pre>
+          {String(children).replace(/\n$/, '')}
+        </SyntaxHighlighter>
       ) : (
         <code
           className={`${className} text-sm bg-zinc-100 dark:bg-zinc-800 py-0.5 px-1 rounded-md`}
