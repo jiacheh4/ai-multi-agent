@@ -204,7 +204,8 @@ export const LiveTranscript = () => {
     const fullTranscript = transcript + (interimResult ? 
       (transcript && !transcript.endsWith('\n') ? '\n' : '') + interimResult : '');
 
-    if (!fullTranscript) return;
+    if (!fullTranscript || isProcessing) return;
+
     try {
       setIsProcessing(true);
       // Create a custom event with the combined transcript data
@@ -214,8 +215,11 @@ export const LiveTranscript = () => {
 
       // Dispatch the event to the window
       window.dispatchEvent(transcriptEvent);
-      
       console.log("Transcript event dispatched:", fullTranscript);
+
+      // Add a delay to ensure the button shows processing state
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
     } catch (error) {
       console.error("Error dispatching transcript event:", error);
     } finally {
@@ -297,7 +301,10 @@ export const LiveTranscript = () => {
             <div className="flex gap-2 mt-auto">
               <button 
                 onClick={handleSendTranscript}
-                className="bg-blue-500 text-white px-2 py-3 rounded hover:bg-blue-600 flex-1"
+                className={`${isProcessing 
+                  ? 'bg-yellow-500 hover:bg-yellow-600' 
+                  : 'bg-blue-500 hover:bg-blue-600'} 
+                  text-white px-2 py-3 rounded flex-1 transition-colors duration-200`}
                 disabled={!transcript || isProcessing}
               >
                 {isProcessing ? 'Sending...' : 'Send'}
