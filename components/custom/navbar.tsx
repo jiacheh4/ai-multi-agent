@@ -1,9 +1,10 @@
 import Link from "next/link";
 
-import { cleanupTempSession } from "@/app/(auth)/actions";
-import { auth, signOut } from "@/app/(auth)/auth";
+import { handleSignOut } from "@/app/(auth)/actions";
+import { auth } from "@/app/(auth)/auth";
 
 import { History } from "./history";
+import { ClientSettingsMenuItem } from "./settings-menu-item";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "../ui/button";
 import {
@@ -41,29 +42,10 @@ export const Navbar = async () => {
                 <ThemeToggle />
               </DropdownMenuItem>
 
-              <DropdownMenuItem>
-                  <button
-                    type="submit"
-                    className="w-full text-left"
-                  >
-                  Setting
-                  </button>
-              </DropdownMenuItem>
+              <ClientSettingsMenuItem />
               
               <DropdownMenuItem className="p-1 z-50">
-                <form
-                  className="w-full"
-                  action={async () => {
-                    "use server";
-
-                    // Cleanup temporary session
-                    await cleanupTempSession();
-
-                    await signOut({
-                      redirectTo: "/",
-                    });
-                  }}
-                >
+                <form action={handleSignOut}>
                   <button
                     type="submit"
                     className="w-full text-left px-1 py-0.5 text-red-500"

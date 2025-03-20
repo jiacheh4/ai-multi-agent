@@ -73,6 +73,15 @@ export const cleanupTempSession = async (): Promise<void> => {
     console.error("Cleanup session error:", error);
   }
 };
+
+export async function handleSignOut() {
+  // Cleanup temporary session
+  await cleanupTempSession();
+
+  await signOut({
+    redirectTo: "/",
+  });
+}
 // -----------------------------END OF SKIP LOGIN-----------------------------
 
 

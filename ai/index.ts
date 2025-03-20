@@ -5,7 +5,7 @@ import { customMiddleware } from "./custom-middleware";
 
 export const customModel = wrapLanguageModel({
   // model: openai("gpt-4o"),
-  // model: openai(" gpt-4o-mini"),
+  // model: openai("gpt-4o-mini"),
   model: openai("o3-mini"),
   middleware: customMiddleware,
 });
@@ -32,6 +32,8 @@ export const customSetting = {
         # Code:
           - Write the code in python if not specified.
           - Please use the more optimal solution approach
+        # Test Cases:
+          - Write additional test cases to ensure coverage
         # Complexity analysis
         # Potential Optimization
 
