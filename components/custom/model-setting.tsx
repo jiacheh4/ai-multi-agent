@@ -126,7 +126,7 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
     
     // Close the dialog
     onOpenChange(false);
-    toast.success('Settings saved successfully!');
+    toast.success('Settings saved successfully!', { duration: 1300 });
 
   };
 
