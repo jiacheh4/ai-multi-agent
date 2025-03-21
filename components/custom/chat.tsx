@@ -14,7 +14,14 @@ import { Overview } from "./overview";
 declare global {
   interface WindowEventMap {
     'transcript-message': CustomEvent<{ content: string }>;
+    'settingsChanged': CustomEvent;
   }
+}
+
+// Type for settings
+interface ChatSettings {
+  modelId?: string;
+  systemMessage?: string;
 }
 
 export function Chat({
@@ -24,9 +31,54 @@ export function Chat({
   id: string;
   initialMessages: Array<Message>;
 }) {
+  // State for custom settings from localStorage
+  const [settings, setSettings] = useState<ChatSettings>({});
+  
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedModelId = localStorage.getItem("selectedModel");
+      const storedSystemMessage = localStorage.getItem("systemMessage");
+      
+      // Only set settings if they exist in localStorage
+      const newSettings: ChatSettings = {};
+      if (storedModelId) newSettings.modelId = storedModelId;
+      if (storedSystemMessage) newSettings.systemMessage = storedSystemMessage;
+      
+      if (Object.keys(newSettings).length > 0) {
+        setSettings(newSettings);
+      }
+    }
+  }, []);
+  
+  // Listen for changes to localStorage
+  useEffect(() => {
+    const handleSettingsChange = () => {
+      const storedModelId = localStorage.getItem("selectedModel");
+      const storedSystemMessage = localStorage.getItem("systemMessage");
+      
+      const newSettings: ChatSettings = {};
+      if (storedModelId) newSettings.modelId = storedModelId;
+      if (storedSystemMessage) newSettings.systemMessage = storedSystemMessage;
+      
+      setSettings(newSettings);
+    };
+    
+    // Listen for the custom settingsChanged event
+    document.addEventListener("settingsChanged", handleSettingsChange);
+    
+    return () => {
+      document.removeEventListener("settingsChanged", handleSettingsChange);
+    };
+  }, []);
+  
   const { messages, handleSubmit, input, setInput, append, isLoading, stop } =
     useChat({
-      body: { id },
+      body: { 
+        id,
+        // Only include settings if they exist
+        ...(Object.keys(settings).length > 0 && { settings })
+      },
       initialMessages,
       onFinish: () => {
         window.history.replaceState({}, "", `/chat/${id}`);
@@ -116,7 +168,7 @@ export function Chat({
   
   // Memoize the throttled version of the callback
   const throttledScrollToBottom = useMemo(
-    () => throttle(scrollToBottomCallback, 250), // Throttle to max once every 100ms
+    () => throttle(scrollToBottomCallback, 250), // Throttle to max once every 250ms
     [scrollToBottomCallback]
   );
   

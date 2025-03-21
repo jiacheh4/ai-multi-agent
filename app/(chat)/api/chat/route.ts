@@ -1,18 +1,76 @@
-import { convertToCoreMessages, Message, streamText } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { experimental_wrapLanguageModel, convertToCoreMessages, Message, streamText } from "ai";
 import { z } from "zod";
 
 import { customModel, customSetting } from "@/ai";
+import { customMiddleware } from "@/ai/custom-middleware";
 import { auth } from "@/app/(auth)/auth";
 import { deleteChatById, getChatById, saveChat } from "@/db/queries";
+
+
+// Function to get settings from client request or use defaults from customModel/customSetting
+function getSettings(requestSettings: { modelId?: string; systemMessage?: string }) {
+  if (!requestSettings.modelId && !requestSettings.systemMessage) {
+    console.log('Custom Setting not found. Using default model and system message');
+    return {
+      model: customModel,
+      modelId: customModel.modelId,
+      systemMessage: customSetting.systemMessage
+    };
+  }
+  
+  // Otherwise, use provided settings with fallbacks to fixed defaults
+  const modelId = requestSettings.modelId || customModel.modelId;
+  const systemMessage = requestSettings.systemMessage || customSetting.systemMessage;
+  
+  // If we're still using the default model, return it
+  if (modelId === customModel.modelId) {
+    return {
+      model: customModel,
+      modelId,
+      systemMessage
+    };
+  }
+  
+  // Create model based on custom modelId
+  let model;
+  
+  switch (modelId) {
+    case "gpt-3.5-turbo":
+      model = experimental_wrapLanguageModel({
+        model: openai("gpt-3.5-turbo"),
+        middleware: customMiddleware,
+      });
+      break;
+    case "gpt-4o-mini":
+      model = experimental_wrapLanguageModel({
+        model: openai("gpt-4o-mini"),
+        middleware: customMiddleware,
+      });
+      break;
+    case "o3-mini":
+    default:
+      // Fallback to customModel if none of the custom options match
+      model = customModel;
+      break;
+  }
+  
+  return { model, modelId, systemMessage };
+}
 
 export async function POST(request: Request) {
   const { 
     id,
     messages,
+    settings = {}
   }: { 
     id: string; 
     messages: Array<Message>;
-   } = await request.json();
+    settings?: {
+      modelId?: string;
+      systemMessage?: string;
+    }
+  } = await request.json();
 
   const session = await auth();
 
@@ -20,13 +78,17 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const isO3Mini = customModel.modelId === "o3-mini";
+  // Get model and system message from request or defaults
+  const { model, modelId, systemMessage } = getSettings(settings);
+  console.log(` POST w/ model: ${modelId} systemMessage: ${systemMessage.slice(0, 30)}...`);
+
+  const isO3Mini = modelId === "o3-mini";
 
   const coreMessages = convertToCoreMessages(messages);
 
   const result = await streamText({
-    model: customModel,
-    system: customSetting.systemMessage,
+    model,
+    system: systemMessage,
     messages: coreMessages,
     maxSteps: 5,
     

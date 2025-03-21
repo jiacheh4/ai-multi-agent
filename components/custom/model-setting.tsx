@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
 
 // Define the model options
 const MODEL_OPTIONS = [
@@ -67,6 +66,9 @@ export const ModelSettingsTrigger = () => {
     // This is where you can add any additional logic when settings are updated
     console.log('Updated Model:', model);
     console.log('Updated System Message:', systemMessage.slice(0, 50), '...');
+    
+    // Dispatch a custom event to notify the chat component about the settings change
+    document.dispatchEvent(new CustomEvent('settingsChanged'));
   };
 
   return (
@@ -106,11 +108,17 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
 }) => {
   // Read initial settings from localStorage
   const getInitialModel = () => {
-    return localStorage.getItem('selectedModel') || 'o3-mini';
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('selectedModel') || 'o3-mini';
+    }
+    return 'o3-mini';
   };
 
   const getInitialSystemMessage = () => {
-    return localStorage.getItem('systemMessage') || DEFAULT_SYSTEM_MESSAGE;
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('systemMessage') || DEFAULT_SYSTEM_MESSAGE;
+    }
+    return DEFAULT_SYSTEM_MESSAGE;
   };
 
   const [selectedModel, setSelectedModel] = useState(getInitialModel());
