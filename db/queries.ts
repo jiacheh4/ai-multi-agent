@@ -1,7 +1,7 @@
 "server-only";
 
 import { genSaltSync, hashSync } from "bcrypt-ts";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -140,6 +140,23 @@ export async function saveUserSettings(
       .where(eq(user.id, userId));
   } catch (error) {
     console.error("Failed to save user settings to database");
+    throw error;
+  }
+}
+
+export async function deleteDuplicateTempUsers(keepUserId: string) {
+  try {
+    await db.delete(chat).where(
+      and(
+        eq(chat.userId, sql`ANY(SELECT "id" FROM "User" WHERE "email" = 'temp@example.com' AND "id" != ${keepUserId})`),
+      ),
+    );
+    const result = await db
+      .delete(user)
+      .where(and(eq(user.email, "temp@example.com"), ne(user.id, keepUserId)));
+    return result;
+  } catch (error) {
+    console.error("Failed to delete duplicate temp users");
     throw error;
   }
 }
