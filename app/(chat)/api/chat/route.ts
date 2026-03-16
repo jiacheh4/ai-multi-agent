@@ -8,21 +8,28 @@ import { auth } from "@/app/(auth)/auth";
 import { deleteChatById, getChatById, saveChat } from "@/db/queries";
 
 
-function getSettings(requestSettings: { modelId?: string; systemMessage?: string; resumeText?: string }) {
+function getSettings(requestSettings: { modelId?: string; systemMessage?: string; resumeText?: string; preferredLanguage?: string }) {
   if (!requestSettings.modelId && !requestSettings.systemMessage) {
     console.log('Custom Setting not found. Using default model and system message');
+    const defaultMsg = requestSettings.preferredLanguage
+      ? `${customSetting.systemMessage}\n\nImportant: Always write all code examples and solutions in ${requestSettings.preferredLanguage} unless the user explicitly requests a different language.`
+      : customSetting.systemMessage;
     return {
       model: customModel,
       modelId: customModel.modelId,
-      systemMessage: customSetting.systemMessage
+      systemMessage: defaultMsg
     };
   }
   
   const modelId = requestSettings.modelId || customModel.modelId;
   const baseSystemMessage = requestSettings.systemMessage || customSetting.systemMessage;
-  const systemMessage = requestSettings.resumeText
+  let systemMessage = requestSettings.resumeText
     ? `Here is the user's resume for reference:\n\n${requestSettings.resumeText}\n\n${baseSystemMessage}`
     : baseSystemMessage;
+  
+  if (requestSettings.preferredLanguage) {
+    systemMessage += `\n\nImportant: Always write all code examples and solutions in ${requestSettings.preferredLanguage} unless the user explicitly requests a different language.`;
+  }
   
   // If we're still using the default model, return it
   if (modelId === customModel.modelId) {
@@ -71,6 +78,7 @@ export async function POST(request: Request) {
       modelId?: string;
       systemMessage?: string;
       resumeText?: string;
+      preferredLanguage?: string;
     }
   } = await request.json();
 

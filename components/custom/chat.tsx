@@ -22,6 +22,7 @@ interface ChatSettings {
   modelId?: string;
   systemMessage?: string;
   resumeText?: string;
+  preferredLanguage?: string;
 }
 
 export function Chat({
@@ -41,11 +42,13 @@ export function Chat({
       const storedSystemMessage = localStorage.getItem("systemMessage");
       const resumeIncluded = localStorage.getItem("resumeIncluded") === "true";
       const storedResume = resumeIncluded ? localStorage.getItem("resumeText") : null;
+      const storedLanguage = localStorage.getItem("preferredLanguage");
       
       const newSettings: ChatSettings = {};
       if (storedModelId) newSettings.modelId = storedModelId;
       if (storedSystemMessage) newSettings.systemMessage = storedSystemMessage;
       if (storedResume) newSettings.resumeText = storedResume;
+      if (storedLanguage && storedLanguage !== 'default') newSettings.preferredLanguage = storedLanguage;
       
       if (Object.keys(newSettings).length > 0) {
         setSettings(newSettings);
@@ -60,11 +63,13 @@ export function Chat({
       const storedSystemMessage = localStorage.getItem("systemMessage");
       const resumeIncluded = localStorage.getItem("resumeIncluded") === "true";
       const storedResume = resumeIncluded ? localStorage.getItem("resumeText") : null;
+      const storedLanguage = localStorage.getItem("preferredLanguage");
       
       const newSettings: ChatSettings = {};
       if (storedModelId) newSettings.modelId = storedModelId;
       if (storedSystemMessage) newSettings.systemMessage = storedSystemMessage;
       if (storedResume) newSettings.resumeText = storedResume;
+      if (storedLanguage && storedLanguage !== 'default') newSettings.preferredLanguage = storedLanguage;
       
       setSettings(newSettings);
     };
