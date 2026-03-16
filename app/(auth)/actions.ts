@@ -3,7 +3,7 @@
 import { z } from "zod";
 
 import { signIn, signOut, auth } from "@/app/(auth)/auth";
-import { createUser, getUser, deleteChatsByUserId } from "@/db/queries";
+import { createUser, getUser, deleteChatsByUserId, deleteDuplicateTempUsers } from "@/db/queries";
 
 const authFormSchema = z.object({
   email: z.string().email(),
@@ -31,15 +31,14 @@ export const skipLogin = async (
 ): Promise<SkipActionState> => {
   try {
     const tempCredentials = generateTempCredentials();
-    
-    // Create a temporary user
-    await createUser(
-      tempCredentials.email, 
-      tempCredentials.password, 
-      //true // isTemporary flag (you'll need to add this to your user schema)
-    );
-    
-    // Sign in with temporary credentials
+
+    const existingUsers = await getUser(tempCredentials.email);
+    if (existingUsers.length === 0) {
+      await createUser(tempCredentials.email, tempCredentials.password);
+    } else if (existingUsers.length > 1) {
+      await deleteDuplicateTempUsers(existingUsers[0].id);
+    }
+
     await signIn("credentials", {
       email: tempCredentials.email,
       password: tempCredentials.password,
