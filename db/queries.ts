@@ -1,5 +1,6 @@
 "server-only";
 
+import { randomBytes } from "crypto";
 import { genSaltSync, hashSync } from "bcrypt-ts";
 import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -140,6 +141,55 @@ export async function saveUserSettings(
       .where(eq(user.id, userId));
   } catch (error) {
     console.error("Failed to save user settings to database");
+    throw error;
+  }
+}
+
+// --- Capture functions ---
+// captureUrl convention: null = idle, 'pending' = waiting for agent, real URL = screenshot ready
+
+export async function generateCaptureToken(userId: string) {
+  try {
+    const token = randomBytes(32).toString("hex");
+    await db.update(user).set({ captureToken: token }).where(eq(user.id, userId));
+    return token;
+  } catch (error) {
+    console.error("Failed to generate capture token");
+    throw error;
+  }
+}
+
+export async function getUserByCaptureToken(token: string) {
+  try {
+    const [result] = await db
+      .select({ id: user.id, captureUrl: user.captureUrl })
+      .from(user)
+      .where(eq(user.captureToken, token));
+    return result ?? null;
+  } catch (error) {
+    console.error("Failed to get user by capture token");
+    throw error;
+  }
+}
+
+export async function getCaptureInfo(userId: string) {
+  try {
+    const [result] = await db
+      .select({ captureToken: user.captureToken, captureUrl: user.captureUrl })
+      .from(user)
+      .where(eq(user.id, userId));
+    return result ?? null;
+  } catch (error) {
+    console.error("Failed to get capture info");
+    throw error;
+  }
+}
+
+export async function setCaptureUrl(userId: string, url: string | null) {
+  try {
+    return await db.update(user).set({ captureUrl: url }).where(eq(user.id, userId));
+  } catch (error) {
+    console.error("Failed to set capture URL");
     throw error;
   }
 }
