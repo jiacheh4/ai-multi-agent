@@ -9,7 +9,7 @@ import { Markdown } from "./markdown";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
 
-export const Message = memo(({
+const MessageComponent = ({
   role,
   content,
   toolInvocations,
@@ -86,4 +86,6 @@ export const Message = memo(({
       )}
     </motion.div>
   );
-});
+};
+
+export const Message = memo(MessageComponent);
