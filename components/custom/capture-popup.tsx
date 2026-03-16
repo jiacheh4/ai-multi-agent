@@ -188,14 +188,14 @@ export function CapturePopup({ imageUrl, onClose, onCaptureAnother }: CapturePop
   return (
     <Dialog open onOpenChange={() => onClose()}>
       <DialogContent
-        className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto"
+        className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col"
         onKeyDown={(e) => e.stopPropagation()}
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle>Screen Capture ({images.length} image{images.length > 1 ? "s" : ""})</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex flex-col gap-3 overflow-hidden">
           {/* Thumbnail strip */}
           {images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1">
@@ -229,20 +229,21 @@ export function CapturePopup({ imageUrl, onClose, onCaptureAnother }: CapturePop
             </div>
           )}
 
-          {/* Active image: show cropped preview or crop tool */}
-          <div className="border rounded overflow-auto max-h-[400px]">
+          {/* Active image: fixed height area, image shrinks to fit */}
+          <div className="border rounded h-[60vh] overflow-hidden flex items-center justify-center bg-muted/30 shrink-0">
             {isCropped(activeIndex) ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={croppedUrls[activeIndex]!}
                 alt="Cropped capture"
-                style={{ maxWidth: "100%" }}
+                style={{ maxWidth: "100%", maxHeight: "60vh", objectFit: "contain" }}
               />
             ) : (
               <ReactCrop
                 crop={crop}
                 onChange={(c) => setCrop(c)}
                 onComplete={handleCropComplete}
+                style={{ maxHeight: "60vh" }}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -250,14 +251,14 @@ export function CapturePopup({ imageUrl, onClose, onCaptureAnother }: CapturePop
                   src={images[activeIndex]}
                   alt="Screen capture"
                   crossOrigin="anonymous"
-                  style={{ maxWidth: "100%" }}
+                  style={{ maxWidth: "100%", maxHeight: "60vh", objectFit: "contain", display: "block" }}
                 />
               </ReactCrop>
             )}
           </div>
 
           {/* Crop status */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground shrink-0">
             <span className="flex items-center gap-1">
               <CropIcon size={12} />
               {isCropped(activeIndex) ? "Cropped — only the selected area will be sent" : "Drag on the image to crop (optional)"}
@@ -270,7 +271,7 @@ export function CapturePopup({ imageUrl, onClose, onCaptureAnother }: CapturePop
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <Button
               onClick={handleAddImage}
               disabled={addingImage}
@@ -299,7 +300,7 @@ export function CapturePopup({ imageUrl, onClose, onCaptureAnother }: CapturePop
 
           {/* Extracted text area */}
           {extractedText && (
-            <div className="space-y-2">
+            <div className="space-y-2 shrink-0">
               <Textarea
                 value={extractedText}
                 onChange={(e) => setExtractedText(e.target.value)}
