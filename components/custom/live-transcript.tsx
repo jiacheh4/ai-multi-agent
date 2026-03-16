@@ -24,14 +24,11 @@ export const LiveTranscript = () => {
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  // Configuration state
+  // Configuration state — keys come from env vars, overridable via localStorage
   const [config, setConfig] = useState({
-    azureToken: 'PyJ5eHqYMxTMumjR5w6E9nAXsGgy39Wsn5mb8tXm0ptA3uHbKsRyJQQJ99BCACYeBjFXJ3w3AAAYACOGCFbj',
-    azureRegion: 'eastus',
+    azureToken: process.env.NEXT_PUBLIC_AZURE_SPEECH_KEY || '',
+    azureRegion: process.env.NEXT_PUBLIC_AZURE_SPEECH_REGION || '',
     language: 'en-US',
-    openaiKey: '',
-    gptModel: 'gpt-3.5-turbo',
-    systemPrompt: ''
   });
 
   // Format time
@@ -60,30 +57,34 @@ export const LiveTranscript = () => {
   };
 
   useEffect(() => {
-    // Load configurations from localStorage
     const loadedConfig = {
       azureToken: localStorage.getItem('azure_token') || config.azureToken,
       azureRegion: localStorage.getItem('azure_region') || config.azureRegion,
       language: localStorage.getItem('azure_language') || config.language,
-      openaiKey: localStorage.getItem('openai_key') || config.openaiKey,
-      gptModel: localStorage.getItem('gpt_model') || config.gptModel,
-      systemPrompt: localStorage.getItem('gpt_system_prompt') || ''
     };
     setConfig(loadedConfig);
 
-    // Try to load saved audio source preference
     const savedAudioSource = localStorage.getItem('audio_source');
     if (savedAudioSource === 'microphone' || savedAudioSource === 'system') {
       setAudioSource(savedAudioSource);
     }
 
-    // Cleanup function
+    const handleAzureSettingsChange = () => {
+      setConfig({
+        azureToken: localStorage.getItem('azure_token') || process.env.NEXT_PUBLIC_AZURE_SPEECH_KEY || '',
+        azureRegion: localStorage.getItem('azure_region') || process.env.NEXT_PUBLIC_AZURE_SPEECH_REGION || '',
+        language: localStorage.getItem('azure_language') || 'en-US',
+      });
+    };
+    window.addEventListener('azureSettingsChanged', handleAzureSettingsChange);
+
     return () => {
-      // Stop recognition and timer if component unmounts
       recognizerRef.current?.stopContinuousRecognitionAsync();
       stopTimer();
+      window.removeEventListener('azureSettingsChanged', handleAzureSettingsChange);
     };
-  }, [config.azureToken, config.azureRegion, config.language, config.openaiKey, config.gptModel]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Save audio source preference whenever it changes
   useEffect(() => {
@@ -130,6 +131,15 @@ export const LiveTranscript = () => {
             // Update only the interim result, not the main transcript
             setInterimResult(text);
           }
+        }
+      };
+
+      recognizer.canceled = (s, e) => {
+        if (e.reason === SpeechSDK.CancellationReason.Error) {
+          console.error('Speech recognition error:', e.errorCode, e.errorDetails);
+          setTranscript(`Error: ${e.errorDetails} (code: ${e.errorCode})`);
+          setIsListening(false);
+          stopTimer();
         }
       };
 
