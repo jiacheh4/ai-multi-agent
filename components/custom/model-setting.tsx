@@ -16,6 +16,22 @@ const MODEL_OPTIONS = [
   { id: 'gpt-3.5-turbo', name: 'ChatGPT 3.5 turbo' }
 ];
 
+const LANGUAGE_OPTIONS = [
+  { id: 'default', name: 'Default (follow system message)' },
+  { id: 'python', name: 'Python' },
+  { id: 'java', name: 'Java' },
+  { id: 'javascript', name: 'JavaScript' },
+  { id: 'typescript', name: 'TypeScript' },
+  { id: 'cpp', name: 'C++' },
+  { id: 'csharp', name: 'C#' },
+  { id: 'go', name: 'Go' },
+  { id: 'rust', name: 'Rust' },
+  { id: 'swift', name: 'Swift' },
+  { id: 'kotlin', name: 'Kotlin' },
+  { id: 'ruby', name: 'Ruby' },
+  { id: 'sql', name: 'SQL' },
+];
+
 // Default system message
 const DEFAULT_SYSTEM_MESSAGE = `
 You are an Interview AI, playing the role of the interviewee (the user). 
@@ -134,10 +150,18 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
     return false;
   };
 
+  const getInitialLanguage = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('preferredLanguage') || 'default';
+    }
+    return 'default';
+  };
+
   const [selectedModel, setSelectedModel] = useState(getInitialModel());
   const [systemMessage, setSystemMessage] = useState(getInitialSystemMessage());
   const [resumeText, setResumeText] = useState(getInitialResumeText());
   const [resumeIncluded, setResumeIncluded] = useState(getInitialResumeIncluded());
+  const [preferredLanguage, setPreferredLanguage] = useState(getInitialLanguage());
   const [azureStatus, setAzureStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [openaiStatus, setOpenaiStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   useEffect(() => {
@@ -220,6 +244,7 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
     localStorage.setItem('systemMessage', systemMessage);
     localStorage.setItem('resumeText', resumeText);
     localStorage.setItem('resumeIncluded', String(resumeIncluded));
+    localStorage.setItem('preferredLanguage', preferredLanguage);
 
     onSettingsUpdate(selectedModel, systemMessage);
     onOpenChange(false);
@@ -283,6 +308,27 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
                   {MODEL_OPTIONS.map((model) => (
                     <SelectItem key={model.id} value={model.id}>
                       {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="language" className="text-right">
+                Code Language
+              </Label>
+              <Select
+                value={preferredLanguage}
+                onValueChange={setPreferredLanguage}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGE_OPTIONS.map((lang) => (
+                    <SelectItem key={lang.id} value={lang.id}>
+                      {lang.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

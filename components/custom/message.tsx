@@ -2,14 +2,14 @@
 
 import { Attachment, ToolInvocation } from "ai";
 import { motion } from "framer-motion";
-import { ReactNode } from "react";
+import { memo, ReactNode, useDeferredValue } from "react";
 
 import { BotIcon, UserIcon } from "./icons";
 import { Markdown } from "./markdown";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
 
-export const Message = ({
+export const Message = memo(({
   role,
   content,
   toolInvocations,
@@ -20,6 +20,8 @@ export const Message = ({
   toolInvocations: Array<ToolInvocation> | undefined;
   attachments?: Array<Attachment>;
 }) => {
+  const deferredContent = useDeferredValue(content);
+
   return (
     <motion.div
     className={`flex flex-row gap-4 px-4 w-full md:px-0 first-of-type:pt-20 mb-6`}
@@ -34,10 +36,10 @@ export const Message = ({
       )}
 
       <div className={`flex flex-col gap-2 w-full ${role === "user" ? "items-end pl-[32px]" : ""}`}>
-        {content && (
+        {deferredContent && (
           <div className={`text-zinc-800 dark:text-zinc-300 flex flex-col gap-4 ${role === "user" ? "items-end" : "max-w-[calc(100%-32px)]"}`}>
             <div className={`text-left ${role === "user" ? "max-w-fit bg-zinc-200 dark:bg-zinc-900 rounded-lg px-5 py-2" : ""}`}>
-              <Markdown>{content as string}</Markdown>
+              <Markdown>{deferredContent as string}</Markdown>
             </div>
           </div>
         )}
@@ -84,4 +86,4 @@ export const Message = ({
       )}
     </motion.div>
   );
-};
+});
