@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -106,7 +106,6 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
   onOpenChange, 
   onSettingsUpdate
 }) => {
-  // Read initial settings from localStorage
   const getInitialModel = () => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('selectedModel') || 'o3-mini';
@@ -123,66 +122,162 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
 
   const [selectedModel, setSelectedModel] = useState(getInitialModel());
   const [systemMessage, setSystemMessage] = useState(getInitialSystemMessage());
+  const [azureStatus, setAzureStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  const [openaiStatus, setOpenaiStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+
+  const handleTestAzure = async () => {
+    const key = (typeof window !== 'undefined' && localStorage.getItem('azure_token'))
+      || process.env.NEXT_PUBLIC_AZURE_SPEECH_KEY || '';
+    const region = (typeof window !== 'undefined' && localStorage.getItem('azure_region'))
+      || process.env.NEXT_PUBLIC_AZURE_SPEECH_REGION || '';
+
+    if (!key || !region) {
+      toast.error('Azure Speech key or region not configured');
+      setAzureStatus('error');
+      return;
+    }
+
+    setAzureStatus('testing');
+    try {
+      const res = await fetch('/api/azure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, region }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setAzureStatus('success');
+        toast.success('Azure Speech connected', { duration: 2000 });
+      } else {
+        setAzureStatus('error');
+        toast.error(data.error || 'Azure Speech connection failed', { duration: 3000 });
+      }
+    } catch {
+      setAzureStatus('error');
+      toast.error('Azure Speech connection failed', { duration: 3000 });
+    }
+  };
+
+  const handleTestOpenai = async () => {
+    setOpenaiStatus('testing');
+    try {
+      const res = await fetch('/api/openai', { method: 'POST' });
+      const data = await res.json();
+      if (data.valid) {
+        setOpenaiStatus('success');
+        toast.success('OpenAI connected', { duration: 2000 });
+      } else {
+        setOpenaiStatus('error');
+        toast.error(data.error || 'OpenAI connection failed', { duration: 3000 });
+      }
+    } catch {
+      setOpenaiStatus('error');
+      toast.error('OpenAI connection failed', { duration: 3000 });
+    }
+  };
 
   const handleSave = () => {
-    // Save to localStorage
     localStorage.setItem('selectedModel', selectedModel);
     localStorage.setItem('systemMessage', systemMessage);
 
-    // Call parent update function
     onSettingsUpdate(selectedModel, systemMessage);
     
-    // Close the dialog
     onOpenChange(false);
     toast.success('Settings saved successfully!', { duration: 1300 });
+  };
 
+  const statusVariant = (s: typeof azureStatus) =>
+    s === 'success' ? 'default' : s === 'error' ? 'destructive' : 'outline';
+
+  const statusLabel = (s: typeof azureStatus, name: string) => {
+    if (s === 'testing') return 'Testing...';
+    if (s === 'success') return `${name} — Connected`;
+    if (s === 'error') return `${name} — Failed (Retry)`;
+    return `Test ${name}`;
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[725px]" forceMount>
+      <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto" forceMount>
         <DialogHeader>
           <DialogTitle>AI Assistant Settings</DialogTitle>
           <DialogDescription>
-            Choose your AI model and system message
+            Configure your AI model, system message, and test service connections
           </DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-4 py-4">
-          {/* Model Selection */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="model" className="text-right">
-              Model
-            </Label>
-            <Select 
-              value={selectedModel} 
-              onValueChange={setSelectedModel}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select a model" />
-              </SelectTrigger>
-              <SelectContent>
-                {MODEL_OPTIONS.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    {model.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="grid gap-6 py-4">
+          {/* --- AI Model Section --- */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold border-b pb-2">AI Model</h3>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="model" className="text-right">
+                Model
+              </Label>
+              <Select 
+                value={selectedModel} 
+                onValueChange={setSelectedModel}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MODEL_OPTIONS.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="systemMessage" className="text-right">
+                System Message
+              </Label>
+              <Textarea
+                id="systemMessage"
+                value={systemMessage}
+                onChange={(e) => setSystemMessage(e.target.value)}
+                className="col-span-3 h-[200px]"
+                placeholder="Enter system message"
+              />
+            </div>
           </div>
 
-          {/* System Message */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="systemMessage" className="text-right">
-              System Message
-            </Label>
-            <Textarea
-              id="systemMessage"
-              value={systemMessage}
-              onChange={(e) => setSystemMessage(e.target.value)}
-              className="col-span-3 h-[300px]"
-              placeholder="Enter system message"
-            />
+          {/* --- Connection Section --- */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold border-b pb-2">Connection</h3>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">OpenAI</Label>
+              <div className="col-span-3">
+                <Button
+                  type="button"
+                  variant={statusVariant(openaiStatus)}
+                  onClick={handleTestOpenai}
+                  disabled={openaiStatus === 'testing'}
+                  className="w-full"
+                >
+                  {statusLabel(openaiStatus, 'OpenAI')}
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Azure Speech</Label>
+              <div className="col-span-3">
+                <Button
+                  type="button"
+                  variant={statusVariant(azureStatus)}
+                  onClick={handleTestAzure}
+                  disabled={azureStatus === 'testing'}
+                  className="w-full"
+                >
+                  {statusLabel(azureStatus, 'Azure Speech')}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
         
