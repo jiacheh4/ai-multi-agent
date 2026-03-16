@@ -391,7 +391,7 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
                 }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                  className={`pointer-events-none inline-block size-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
                     resumeIncluded ? 'translate-x-4' : 'translate-x-0'
                   }`}
                 />

@@ -1,9 +1,9 @@
 "use client";
 
+import { Crop as CropIcon, ImagePlus, X } from "lucide-react";
 import React, { useState, useRef, useCallback } from "react";
 import ReactCrop, { type Crop, type PixelCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
-import { Crop as CropIcon, ImagePlus, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -214,7 +214,7 @@ export function CapturePopup({ imageUrl, onClose, onCaptureAnother }: CapturePop
                     />
                   </button>
                   {isCropped(i) && (
-                    <span className="absolute bottom-0 left-0 right-0 bg-blue-500 text-white text-[8px] text-center leading-tight">
+                    <span className="absolute bottom-0 inset-x-0 bg-blue-500 text-white text-[8px] text-center leading-tight">
                       Cropped
                     </span>
                   )}

@@ -1,4 +1,5 @@
 import { put } from "@vercel/blob";
+
 import { getUserByCaptureToken, setCaptureUrl } from "@/db/queries";
 
 export async function POST(request: Request) {

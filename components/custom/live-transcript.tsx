@@ -464,7 +464,7 @@ export const LiveTranscript = () => {
             <button
               onClick={handleTestAgent}
               disabled={agentChecking}
-              className="flex items-center gap-1 px-2 py-2 border rounded hover:bg-gray-100 transition-colors flex-1 justify-center"
+              className="flex items-center gap-1 p-2 border rounded hover:bg-gray-100 transition-colors flex-1 justify-center"
             >
               {agentChecking ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -482,7 +482,7 @@ export const LiveTranscript = () => {
             <button
               onClick={handleCapture}
               disabled={capturing || agentOnline !== true}
-              className="flex items-center gap-1 px-2 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors flex-1 justify-center"
+              className="flex items-center gap-1 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors flex-1 justify-center"
             >
               {capturing ? (
                 <Loader2 size={14} className="animate-spin" />

@@ -1,5 +1,6 @@
 import { openai } from "@ai-sdk/openai";
 import { generateText } from "ai";
+
 import { auth } from "@/app/(auth)/auth";
 
 const EXTRACTION_PROMPT = `Extract ALL text from this image exactly as shown. This is a coding problem (likely LeetCode format).
