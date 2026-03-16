@@ -8,8 +8,7 @@ import { auth } from "@/app/(auth)/auth";
 import { deleteChatById, getChatById, saveChat } from "@/db/queries";
 
 
-// Function to get settings from client request or use defaults from customModel/customSetting
-function getSettings(requestSettings: { modelId?: string; systemMessage?: string }) {
+function getSettings(requestSettings: { modelId?: string; systemMessage?: string; resumeText?: string }) {
   if (!requestSettings.modelId && !requestSettings.systemMessage) {
     console.log('Custom Setting not found. Using default model and system message');
     return {
@@ -19,9 +18,11 @@ function getSettings(requestSettings: { modelId?: string; systemMessage?: string
     };
   }
   
-  // Otherwise, use provided settings with fallbacks to fixed defaults
   const modelId = requestSettings.modelId || customModel.modelId;
-  const systemMessage = requestSettings.systemMessage || customSetting.systemMessage;
+  const baseSystemMessage = requestSettings.systemMessage || customSetting.systemMessage;
+  const systemMessage = requestSettings.resumeText
+    ? `Here is the user's resume for reference:\n\n${requestSettings.resumeText}\n\n${baseSystemMessage}`
+    : baseSystemMessage;
   
   // If we're still using the default model, return it
   if (modelId === customModel.modelId) {
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
     settings?: {
       modelId?: string;
       systemMessage?: string;
+      resumeText?: string;
     }
   } = await request.json();
 

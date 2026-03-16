@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -120,10 +120,49 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
     return DEFAULT_SYSTEM_MESSAGE;
   };
 
+  const getInitialResumeText = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('resumeText') || '';
+    }
+    return '';
+  };
+
+  const getInitialResumeIncluded = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('resumeIncluded') === 'true';
+    }
+    return false;
+  };
+
   const [selectedModel, setSelectedModel] = useState(getInitialModel());
   const [systemMessage, setSystemMessage] = useState(getInitialSystemMessage());
+  const [resumeText, setResumeText] = useState(getInitialResumeText());
+  const [resumeIncluded, setResumeIncluded] = useState(getInitialResumeIncluded());
   const [azureStatus, setAzureStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [openaiStatus, setOpenaiStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    fetch('/api/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (data.systemMessage != null) {
+          setSystemMessage(data.systemMessage);
+          localStorage.setItem('systemMessage', data.systemMessage);
+        }
+        if (data.resumeText != null) {
+          setResumeText(data.resumeText);
+          localStorage.setItem('resumeText', data.resumeText);
+        }
+        if (data.resumeIncluded != null) {
+          setResumeIncluded(data.resumeIncluded);
+          localStorage.setItem('resumeIncluded', String(data.resumeIncluded));
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   const handleTestAzure = async () => {
     const key = (typeof window !== 'undefined' && localStorage.getItem('azure_token'))
@@ -176,14 +215,29 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     localStorage.setItem('selectedModel', selectedModel);
     localStorage.setItem('systemMessage', systemMessage);
+    localStorage.setItem('resumeText', resumeText);
+    localStorage.setItem('resumeIncluded', String(resumeIncluded));
 
     onSettingsUpdate(selectedModel, systemMessage);
-    
     onOpenChange(false);
-    toast.success('Settings saved successfully!', { duration: 1300 });
+
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resumeText, resumeIncluded, systemMessage }),
+      });
+      if (res.ok) {
+        toast.success('Settings saved successfully!', { duration: 1300 });
+      } else {
+        toast.error('Settings saved locally but failed to sync to server');
+      }
+    } catch {
+      toast.error('Settings saved locally but failed to sync to server');
+    }
   };
 
   const statusVariant = (s: typeof azureStatus) =>
@@ -198,7 +252,11 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto" forceMount>
+      <DialogContent
+        className="sm:max-w-[725px] max-h-[90vh] overflow-y-auto"
+        forceMount
+        onKeyDown={(e) => e.stopPropagation()}
+      >
         <DialogHeader>
           <DialogTitle>AI Assistant Settings</DialogTitle>
           <DialogDescription>
@@ -243,6 +301,45 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
                 placeholder="Enter system message"
               />
             </div>
+          </div>
+
+          {/* --- Resume Section --- */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="text-sm font-semibold">Resume</h3>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={resumeIncluded}
+                onClick={() => setResumeIncluded(!resumeIncluded)}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                  resumeIncluded ? 'bg-primary' : 'bg-muted-foreground/30'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                    resumeIncluded ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="resumeText" className="text-right">
+                Resume Text
+              </Label>
+              <Textarea
+                id="resumeText"
+                value={resumeText}
+                onChange={(e) => setResumeText(e.target.value)}
+                className={`col-span-3 h-[150px] transition-opacity ${!resumeIncluded ? 'opacity-40' : ''}`}
+                placeholder="Paste your resume text here..."
+                disabled={!resumeIncluded}
+              />
+            </div>
+            {!resumeIncluded && resumeText && (
+              <p className="text-xs text-muted-foreground text-right">Resume saved but not included in AI context</p>
+            )}
           </div>
 
           {/* --- Connection Section --- */}

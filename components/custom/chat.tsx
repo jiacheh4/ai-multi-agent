@@ -21,6 +21,7 @@ declare global {
 interface ChatSettings {
   modelId?: string;
   systemMessage?: string;
+  resumeText?: string;
 }
 
 export function Chat({
@@ -38,10 +39,13 @@ export function Chat({
     if (typeof window !== "undefined") {
       const storedModelId = localStorage.getItem("selectedModel");
       const storedSystemMessage = localStorage.getItem("systemMessage");
+      const resumeIncluded = localStorage.getItem("resumeIncluded") === "true";
+      const storedResume = resumeIncluded ? localStorage.getItem("resumeText") : null;
       
       const newSettings: ChatSettings = {};
       if (storedModelId) newSettings.modelId = storedModelId;
       if (storedSystemMessage) newSettings.systemMessage = storedSystemMessage;
+      if (storedResume) newSettings.resumeText = storedResume;
       
       if (Object.keys(newSettings).length > 0) {
         setSettings(newSettings);
@@ -54,10 +58,13 @@ export function Chat({
     const handleSettingsChange = () => {
       const storedModelId = localStorage.getItem("selectedModel");
       const storedSystemMessage = localStorage.getItem("systemMessage");
+      const resumeIncluded = localStorage.getItem("resumeIncluded") === "true";
+      const storedResume = resumeIncluded ? localStorage.getItem("resumeText") : null;
       
       const newSettings: ChatSettings = {};
       if (storedModelId) newSettings.modelId = storedModelId;
       if (storedSystemMessage) newSettings.systemMessage = storedSystemMessage;
+      if (storedResume) newSettings.resumeText = storedResume;
       
       setSettings(newSettings);
     };

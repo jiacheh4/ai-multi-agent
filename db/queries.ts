@@ -107,3 +107,39 @@ export async function getChatById({ id }: { id: string }) {
     throw error;
   }
 }
+
+export async function getUserSettings(userId: string) {
+  try {
+    const [result] = await db
+      .select({
+        resumeText: user.resumeText,
+        resumeIncluded: user.resumeIncluded,
+        systemMessage: user.systemMessage,
+      })
+      .from(user)
+      .where(eq(user.id, userId));
+    return result ?? null;
+  } catch (error) {
+    console.error("Failed to get user settings from database");
+    throw error;
+  }
+}
+
+export async function saveUserSettings(
+  userId: string,
+  settings: {
+    resumeText?: string | null;
+    resumeIncluded?: boolean;
+    systemMessage?: string | null;
+  },
+) {
+  try {
+    return await db
+      .update(user)
+      .set(settings)
+      .where(eq(user.id, userId));
+  } catch (error) {
+    console.error("Failed to save user settings to database");
+    throw error;
+  }
+}

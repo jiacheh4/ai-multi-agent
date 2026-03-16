@@ -1,11 +1,14 @@
 import { Message } from "ai";
 import { InferSelectModel } from "drizzle-orm";
-import { pgTable, varchar, timestamp, json, uuid } from "drizzle-orm/pg-core";
+import { pgTable, varchar, timestamp, json, uuid, text, boolean } from "drizzle-orm/pg-core";
 
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   email: varchar("email", { length: 64 }).notNull(),
   password: varchar("password", { length: 64 }),
+  resumeText: text("resumeText"),
+  resumeIncluded: boolean("resumeIncluded").default(false),
+  systemMessage: text("systemMessage"),
 });
 
 export type User = InferSelectModel<typeof user>;
