@@ -44,21 +44,26 @@ function getSettings(requestSettings: { modelId?: string; systemMessage?: string
   let model;
   
   switch (modelId) {
-    case "gpt-3.5-turbo":
+    case "gpt-5-mini":
       model = experimental_wrapLanguageModel({
-        model: openai("gpt-3.5-turbo"),
+        model: openai("gpt-5-mini"),
+        middleware: customMiddleware,
+      });
+      break;
+    case "gpt-5.4":
+      model = experimental_wrapLanguageModel({
+        model: openai("gpt-5.4"),
+        middleware: customMiddleware,
+      });
+      break;
+    case "o4-mini":
+      model = experimental_wrapLanguageModel({
+        model: openai("o4-mini"),
         middleware: customMiddleware,
       });
       break;
     case "gpt-4o-mini":
-      model = experimental_wrapLanguageModel({
-        model: openai("gpt-4o-mini"),
-        middleware: customMiddleware,
-      });
-      break;
-    case "o3-mini":
     default:
-      // Fallback to customModel if none of the custom options match
       model = customModel;
       break;
   }
@@ -89,12 +94,25 @@ export async function POST(request: Request) {
   }
 
   // Get model and system message from request or defaults
-  const { model, modelId, systemMessage } = getSettings(settings);
+  let { model, modelId, systemMessage } = getSettings(settings);
   console.log(` POST w/ model: ${modelId} systemMessage: ${systemMessage.slice(0, 30)}...`);
 
-  const isO3Mini = modelId === "o3-mini";
-
   const coreMessages = convertToCoreMessages(messages);
+
+  // Auto-switch to GPT-5.4 when any message has image attachments (vision capability)
+  const hasImages = messages.some(
+    (m) => m.experimental_attachments?.some((a) => a.contentType?.startsWith("image/"))
+  );
+  if (hasImages) {
+    model = experimental_wrapLanguageModel({
+      model: openai("gpt-5.4"),
+      middleware: customMiddleware,
+    });
+    modelId = "gpt-5.4";
+    console.log(" → Switched to gpt-5.4 for image understanding");
+  }
+
+  const isO3Mini = modelId === "o3-mini";
 
   const result = await streamText({
     model,

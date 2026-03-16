@@ -9,6 +9,8 @@ export const user = pgTable("User", {
   resumeText: text("resumeText"),
   resumeIncluded: boolean("resumeIncluded").default(false),
   systemMessage: text("systemMessage"),
+  captureToken: varchar("captureToken", { length: 64 }),
+  captureUrl: text("captureUrl"),
 });
 
 export type User = InferSelectModel<typeof user>;

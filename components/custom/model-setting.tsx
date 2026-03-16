@@ -11,9 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 
 // Define the model options
 const MODEL_OPTIONS = [
-  { id: 'o3-mini', name: 'ChatGPT o3-mini' },
-  { id: 'gpt-4o-mini', name: 'ChatGPT 4o mini' },
-  { id: 'gpt-3.5-turbo', name: 'ChatGPT 3.5 turbo' }
+  { id: 'gpt-4o-mini', name: 'GPT-4o mini' },
+  { id: 'gpt-5-mini', name: 'GPT-5 mini' },
+  { id: 'gpt-5.4', name: 'GPT-5.4' },
+  { id: 'o4-mini', name: 'o4-mini' },
 ];
 
 const LANGUAGE_OPTIONS = [
@@ -124,9 +125,9 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
 }) => {
   const getInitialModel = () => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('selectedModel') || 'o3-mini';
+      return localStorage.getItem('selectedModel') || 'gpt-4o-mini';
     }
-    return 'o3-mini';
+    return 'gpt-4o-mini';
   };
 
   const getInitialSystemMessage = () => {
@@ -162,6 +163,8 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
   const [resumeText, setResumeText] = useState(getInitialResumeText());
   const [resumeIncluded, setResumeIncluded] = useState(getInitialResumeIncluded());
   const [preferredLanguage, setPreferredLanguage] = useState(getInitialLanguage());
+  const [captureToken, setCaptureToken] = useState<string | null>(null);
+  const [captureLoading, setCaptureLoading] = useState(false);
   const [azureStatus, setAzureStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   const [openaiStatus, setOpenaiStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   useEffect(() => {
@@ -183,6 +186,13 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
           setResumeIncluded(data.resumeIncluded);
           localStorage.setItem('resumeIncluded', String(data.resumeIncluded));
         }
+      })
+      .catch(() => {});
+    fetch('/api/capture/status')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        if (data.token) setCaptureToken(data.token);
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -236,6 +246,24 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
     } catch {
       setOpenaiStatus('error');
       toast.error('OpenAI connection failed', { duration: 3000 });
+    }
+  };
+
+  const handleGenerateToken = async () => {
+    setCaptureLoading(true);
+    try {
+      const res = await fetch('/api/capture/token', { method: 'POST' });
+      const data = await res.json();
+      if (res.ok && data.token) {
+        setCaptureToken(data.token);
+        toast.success('Capture token generated');
+      } else {
+        toast.error('Failed to generate token');
+      }
+    } catch {
+      toast.error('Failed to generate token');
+    } finally {
+      setCaptureLoading(false);
     }
   };
 
@@ -363,7 +391,7 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
                 }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                  className={`pointer-events-none inline-block size-4 rounded-full bg-background shadow-lg ring-0 transition-transform ${
                     resumeIncluded ? 'translate-x-4' : 'translate-x-0'
                   }`}
                 />
@@ -419,6 +447,56 @@ const ModelSettings: React.FC<ModelSettingsProps> = ({
                 >
                   {statusLabel(azureStatus, 'Azure Speech')}
                 </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* --- Screen Capture Section --- */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold border-b pb-2">Screen Capture</h3>
+
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right">Agent Token</Label>
+              <div className="col-span-3 space-y-2">
+                {captureToken ? (
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 rounded bg-muted px-2 py-1 text-xs break-all select-all">
+                      {captureToken}
+                    </code>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(captureToken);
+                        toast.success('Token copied');
+                      }}
+                    >
+                      Copy
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateToken}
+                      disabled={captureLoading}
+                    >
+                      Regenerate
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={handleGenerateToken}
+                    disabled={captureLoading}
+                    className="w-full"
+                  >
+                    {captureLoading ? 'Generating...' : 'Generate Token'}
+                  </Button>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Paste this token into <code>tools/capture-agent/.env</code> on your MacBook to enable remote screen capture.
+                </p>
               </div>
             </div>
           </div>

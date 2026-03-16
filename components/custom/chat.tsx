@@ -121,15 +121,18 @@ export function Chat({
   
   // Add the event listener for the transcript message
   useEffect(() => {
-    // Event handler function
-    const handleTranscriptMessage = (event: CustomEvent<{ content: string }>) => {
+    const handleTranscriptMessage = (event: CustomEvent<{ content: string; attachments?: Array<{ url: string; name: string; contentType: string }> }>) => {
       if (event.detail && event.detail.content) {
-        // Send the transcript content using append
         setShouldScrollAfterUserMessage(true);
-        append({
-          role: 'user',
-          content: event.detail.content,
-        });
+        append(
+          {
+            role: 'user',
+            content: event.detail.content,
+          },
+          event.detail.attachments
+            ? { experimental_attachments: event.detail.attachments }
+            : undefined,
+        );
       }
     };
 

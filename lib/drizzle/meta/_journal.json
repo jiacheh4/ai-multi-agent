@@ -15,6 +15,13 @@
       "when": 1773629252845,
       "tag": "0001_special_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773645155164,
+      "tag": "0002_motionless_centennial",
+      "breakpoints": true
     }
   ]
 }

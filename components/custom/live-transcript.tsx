@@ -1,8 +1,10 @@
-"use client"; // Specify that this is a client component
+"use client";
 
-import { Mic, MicOff, Speaker } from 'lucide-react';
+import { Camera, Mic, MicOff, Speaker, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
 import React, { useEffect, useState, useRef } from 'react';
+
+import { CapturePopup } from './capture-popup';
 
 // Add type definition for the custom event
 declare global {
@@ -18,6 +20,11 @@ export const LiveTranscript = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [audioSource, setAudioSource] = useState<'microphone' | 'system'>('microphone');
+  const [agentOnline, setAgentOnline] = useState<boolean | null>(null);
+  const [agentChecking, setAgentChecking] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [capturePopupUrl, setCapturePopupUrl] = useState<string | null>(null);
+  const [captureLog, setCaptureLog] = useState<string[]>([]);
 
   // Refs for speech recognizer and timer
   const recognizerRef = useRef<SpeechSDK.SpeechRecognizer | null>(null);
@@ -237,6 +244,126 @@ export const LiveTranscript = () => {
     }
   };
   
+  const addLog = (msg: string) => {
+    const ts = new Date().toLocaleTimeString();
+    setCaptureLog(prev => [...prev.slice(-19), `[${ts}] ${msg}`]);
+  };
+
+  const handleTestAgent = async () => {
+    setAgentChecking(true);
+    setAgentOnline(null);
+    addLog("Testing connection...");
+    try {
+      // Check if token exists
+      const statusRes = await fetch('/api/capture/status');
+      if (!statusRes.ok) {
+        addLog(`Status check failed: HTTP ${statusRes.status}`);
+        setAgentOnline(false);
+        return;
+      }
+      const statusData = await statusRes.json();
+      if (!statusData.hasToken) {
+        addLog("No capture token found. Generate one in Settings → Screen Capture.");
+        setAgentOnline(false);
+        return;
+      }
+
+      // Send a ping and wait for pong
+      addLog("Token found. Pinging agent...");
+      const pingRes = await fetch('/api/capture/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'ping' }),
+      });
+      if (!pingRes.ok) {
+        addLog(`Ping request failed: HTTP ${pingRes.status}`);
+        setAgentOnline(false);
+        return;
+      }
+
+      // Poll for pong (agent should respond within 1-2s)
+      let attempts = 0;
+      const maxAttempts = 6;
+      while (attempts < maxAttempts) {
+        await new Promise(r => setTimeout(r, 500));
+        const resultRes = await fetch('/api/capture/result');
+        if (!resultRes.ok) break;
+        const data = await resultRes.json();
+        if (data.status === 'pong') {
+          addLog("Agent responded — online!");
+          setAgentOnline(true);
+          return;
+        }
+        attempts++;
+      }
+      addLog("Agent did not respond within 3s. Is it running?");
+      setAgentOnline(false);
+    } catch (err) {
+      addLog(`Connection error: ${err instanceof Error ? err.message : String(err)}`);
+      setAgentOnline(false);
+    } finally {
+      setAgentChecking(false);
+    }
+  };
+
+  const requestAndPollCapture = async (): Promise<string | null> => {
+    addLog("Requesting capture...");
+    const reqRes = await fetch('/api/capture/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'capture' }),
+    });
+    if (!reqRes.ok) {
+      const body = await reqRes.text();
+      addLog(`Request failed: HTTP ${reqRes.status} — ${body}`);
+      return null;
+    }
+    addLog("Capture request sent. Waiting for agent to screenshot...");
+
+    let attempts = 0;
+    const maxAttempts = 20;
+    while (attempts < maxAttempts) {
+      await new Promise(r => setTimeout(r, 500));
+      const resultRes = await fetch('/api/capture/result');
+      if (!resultRes.ok) {
+        addLog(`Poll failed: HTTP ${resultRes.status}`);
+        return null;
+      }
+      const data = await resultRes.json();
+      addLog(`Poll #${attempts + 1}: status=${data.status}`);
+      if (data.status === 'ready' && data.url) {
+        addLog("Screenshot received!");
+        return data.url;
+      }
+      if (attempts === maxAttempts - 1) {
+        addLog("Timed out — agent did not respond within 10s. Is it running?");
+      }
+      attempts++;
+    }
+    return null;
+  };
+
+  const handleCapture = async () => {
+    setCapturing(true);
+    try {
+      const url = await requestAndPollCapture();
+      if (url) setCapturePopupUrl(url);
+    } catch (err) {
+      addLog(`Capture error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setCapturing(false);
+    }
+  };
+
+  const handleCaptureAnother = async (): Promise<string | null> => {
+    try {
+      return await requestAndPollCapture();
+    } catch (err) {
+      addLog(`Capture error: ${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    }
+  };
+
   return (
       <div className="flex-[1] rounded-md p-1 overflow-hidden h-full flex flex-col gap-2">
         <div className="flex items-center justify-between">
@@ -329,7 +456,63 @@ export const LiveTranscript = () => {
             </div>
           </div>
         </div>
+
+        {/* Screen Capture Section */}
+        <div className="border rounded p-2 flex flex-col gap-2">
+          <h2 className="text-xs font-bold">Screen Capture</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={handleTestAgent}
+              disabled={agentChecking}
+              className="flex items-center gap-1 p-2 border rounded hover:bg-gray-100 transition-colors flex-1 justify-center"
+            >
+              {agentChecking ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : agentOnline ? (
+                <Wifi size={14} className="text-green-500" />
+              ) : agentOnline === false ? (
+                <WifiOff size={14} className="text-red-500" />
+              ) : (
+                <Wifi size={14} />
+              )}
+              <span>
+                {agentChecking ? 'Checking...' : agentOnline ? 'Agent Online' : agentOnline === false ? 'Agent Offline' : 'Test Connection'}
+              </span>
+            </button>
+            <button
+              onClick={handleCapture}
+              disabled={capturing || agentOnline !== true}
+              className="flex items-center gap-1 p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 transition-colors flex-1 justify-center"
+            >
+              {capturing ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Camera size={14} />
+              )}
+              <span>{capturing ? 'Capturing...' : 'Capture Screen'}</span>
+            </button>
+          </div>
+
+          {/* Capture log output */}
+          {captureLog.length > 0 && (
+            <div className="bg-muted/50 border rounded p-2 max-h-[120px] overflow-y-auto">
+              {captureLog.map((line, i) => (
+                <p key={i} className="text-[10px] font-mono text-muted-foreground leading-tight">
+                  {line}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
         
+        {/* Capture popup rendered here */}
+        {capturePopupUrl && (
+          <CapturePopup
+            imageUrl={capturePopupUrl}
+            onClose={() => setCapturePopupUrl(null)}
+            onCaptureAnother={handleCaptureAnother}
+          />
+        )}
       </div>
     );
   };
