@@ -1,6 +1,6 @@
 "use client";
 
-import { Camera, Mic, MicOff, Speaker, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import { Camera, Globe, Mic, MicOff, Speaker, Wifi, WifiOff, Loader2 } from 'lucide-react';
 import * as SpeechSDK from 'microsoft-cognitiveservices-speech-sdk';
 import React, { useEffect, useState, useRef } from 'react';
 
@@ -30,6 +30,14 @@ export const LiveTranscript = () => {
   const recognizerRef = useRef<SpeechSDK.SpeechRecognizer | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
+
+  const SUPPORTED_LANGUAGES = [
+    { code: 'en-US', short: 'EN', label: 'English' },
+    { code: 'zh-CN', short: '中', label: '中文' },
+  ] as const;
+
+  const normalizeLanguage = (code: string) =>
+    SUPPORTED_LANGUAGES.some(l => l.code === code) ? code : 'en-US';
 
   // Configuration state — keys come from env vars, overridable via localStorage
   const [config, setConfig] = useState({
@@ -67,7 +75,7 @@ export const LiveTranscript = () => {
     const loadedConfig = {
       azureToken: localStorage.getItem('azure_token') || config.azureToken,
       azureRegion: localStorage.getItem('azure_region') || config.azureRegion,
-      language: localStorage.getItem('azure_language') || config.language,
+      language: normalizeLanguage(localStorage.getItem('azure_language') || config.language),
     };
     setConfig(loadedConfig);
 
@@ -80,7 +88,7 @@ export const LiveTranscript = () => {
       setConfig({
         azureToken: localStorage.getItem('azure_token') || process.env.NEXT_PUBLIC_AZURE_SPEECH_KEY || '',
         azureRegion: localStorage.getItem('azure_region') || process.env.NEXT_PUBLIC_AZURE_SPEECH_REGION || '',
-        language: localStorage.getItem('azure_language') || 'en-US',
+        language: normalizeLanguage(localStorage.getItem('azure_language') || 'en-US'),
       });
     };
     window.addEventListener('azureSettingsChanged', handleAzureSettingsChange);
@@ -205,10 +213,15 @@ export const LiveTranscript = () => {
   };
 
   const toggleAudioSource = () => {
-    // Only allow toggling when not actively listening
     if (!isListening) {
       setAudioSource(prev => prev === 'microphone' ? 'system' : 'microphone');
     }
+  };
+
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLang = e.target.value;
+    localStorage.setItem('azure_language', newLang);
+    setConfig(prev => ({ ...prev, language: newLang }));
   };
 
   const handleClearTranscript = () => {
@@ -364,6 +377,8 @@ export const LiveTranscript = () => {
     }
   };
 
+  const currentLanguage = SUPPORTED_LANGUAGES.find(l => l.code === config.language) ?? SUPPORTED_LANGUAGES[0];
+
   return (
       <div className="flex-[1] rounded-md p-1 overflow-hidden h-full flex flex-col gap-2">
         <div className="flex items-center justify-between">
@@ -373,25 +388,51 @@ export const LiveTranscript = () => {
               {formatTime(elapsedTime)}
             </div>
           </div>
-          {/* Audio source selector */}
-          <button
-            onClick={toggleAudioSource}
-            disabled={isListening}
-            className="flex items-center gap-1 p-1 border rounded hover:bg-gray-100 disabled:opacity-50"
-            title={isListening ? "Can't change audio source while listening" : "Toggle audio source"}
-          >
-            {audioSource === 'microphone' ? (
-              <>
-                <Mic size={16} />
-                <span>Mic</span>
-              </>
-            ) : (
-              <>
-                <Speaker size={16} />
-                <span>Sys</span>
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Audio source selector */}
+            <button
+              onClick={toggleAudioSource}
+              disabled={isListening}
+              className="flex h-7 items-center gap-0.5 rounded border px-1.5 py-0.5 text-xs hover:bg-gray-100 disabled:opacity-50"
+              title={isListening ? "Can't change audio source while listening" : "Toggle audio source"}
+            >
+              {audioSource === 'microphone' ? (
+                <>
+                  <Mic size={14} />
+                  <span>Mic</span>
+                </>
+              ) : (
+                <>
+                  <Speaker size={14} />
+                  <span>Sys</span>
+                </>
+              )}
+            </button>
+
+            {/* Language: closed state shows icon + EN/中; native menu shows English / 中文 */}
+            <div
+              className={`relative flex h-7 min-w-[3.25rem] items-center gap-0.5 rounded border px-1.5 py-0.5 hover:bg-gray-100 ${isListening ? 'opacity-50' : ''}`}
+              title={isListening ? "Can't change language while listening" : "Select recognition language"}
+            >
+              <Globe size={14} className="pointer-events-none shrink-0" aria-hidden />
+              <span className="pointer-events-none text-xs font-medium leading-none tabular-nums">
+                {currentLanguage.short}
+              </span>
+              <select
+                value={config.language}
+                onChange={handleLanguageChange}
+                disabled={isListening}
+                aria-label="Recognition language"
+                className="absolute inset-0 z-10 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed dark:[&>option]:bg-neutral-900 dark:[&>option]:text-gray-100 [&>option]:bg-white [&>option]:text-gray-900"
+              >
+                {SUPPORTED_LANGUAGES.map(lang => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {/* Start/Stop button */}
           {!isListening ? (
